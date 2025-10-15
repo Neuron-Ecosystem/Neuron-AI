@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuron AI - Умный помощник</title>
+    <link rel="stylesheet" href="ai-style.css">
+</head>
+<body>
+    <div class="ai-container">
+        <!-- AI Widget -->
+        <div class="ai-widget" id="aiWidget">
+            <div class="ai-header">
+                <div class="ai-avatar">🧠</div>
+                <div class="ai-info">
+                    <h3>Neuron AI</h3>
+                    <span class="ai-status">Онлайн</span>
+                </div>
+                <button class="ai-close" onclick="toggleAI()">×</button>
+            </div>
+            
+            <div class="ai-chat" id="aiChat">
+                <div class="ai-message bot-message">
+                    <div class="message-avatar">🧠</div>
+                    <div class="message-content">
+                        <p>Привет! Я Neuron AI - ваш помощник в экосистеме Neuron. Чем могу помочь?</p>
+                        <div class="quick-commands">
+                            <button onclick="sendQuickCommand('помощь')">🆘 Помощь</button>
+                            <button onclick="sendQuickCommand('игры')">🎮 Игры</button>
+                            <button onclick="sendQuickCommand('конвертер')">💱 Конвертер</button>
+                            <button onclick="sendQuickCommand('заметки')">📝 Заметки</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ai-input-container">
+                <div class="ai-tools">
+                    <button onclick="startVoiceInput()">🎤</button>
+                    <button onclick="clearChat()">🗑️</button>
+                </div>
+                <input type="text" id="aiInput" placeholder="Спросите меня о чем-либо..." onkeypress="handleAIInput(event)">
+                <button onclick="sendAIMessage()">➤</button>
+            </div>
+        </div>
+        
+        <!-- AI Trigger Button -->
+        <button class="ai-trigger" onclick="toggleAI()">
+            <span class="ai-pulse"></span>
+            🧠
+        </button>
+    </div>
+
+    <script src="neuron-ai.js"></script>
+</body>
+</html>
