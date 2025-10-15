@@ -3,6 +3,8 @@ class NeuronAI {
     constructor() {
         this.isActive = false;
         this.chatHistory = [];
+        this.conversationContext = [];
+        this.maxContextLength = 10; // Сохраняем последние 10 сообщений для контекста
         this.setupEventListeners();
         this.loadChatHistory();
         this.initAI();
@@ -44,6 +46,12 @@ class NeuronAI {
             'раздели': this.calculateMath.bind(this),
             'вычти': this.calculateMath.bind(this),
             
+            // Управление чатом
+            'полный экран': this.toggleFullscreen.bind(this),
+            'обычный режим': this.toggleFullscreen.bind(this),
+            'очисти чат': this.clearChat.bind(this),
+            'новая тема': this.clearContext.bind(this),
+            
             // Общие команды
             'привет': () => this.sendResponse(this.getGreeting()),
             'как дела': () => this.sendResponse(this.getMood()),
@@ -70,6 +78,9 @@ class NeuronAI {
         const message = input.toLowerCase().trim();
         this.addMessage(message, 'user');
         
+        // Добавляем в контекст
+        this.addToContext(message, 'user');
+        
         this.showTypingIndicator();
         
         const localResponse = this.findLocalResponse(message);
@@ -83,9 +94,286 @@ class NeuronAI {
         
         setTimeout(() => {
             this.hideTypingIndicator();
-            const aiResponse = this.generateSmartResponse(message);
+            const aiResponse = this.generateContextAwareResponse(message);
             this.sendResponse(aiResponse);
         }, 1500);
+    }
+
+    // Добавление сообщения в контекст
+    addToContext(message, sender) {
+        this.conversationContext.push({
+            text: message,
+            sender: sender,
+            timestamp: Date.now()
+        });
+        
+        // Ограничиваем размер контекста
+        if (this.conversationContext.length > this.maxContextLength) {
+            this.conversationContext = this.conversationContext.slice(-this.maxContextLength);
+        }
+        
+        this.saveContext();
+    }
+
+    // Генерация ответа с учетом контекста
+    generateContextAwareResponse(message) {
+        const context = this.getRelevantContext();
+        
+        // Анализируем контекст для логических ответов
+        if (this.isFollowUpQuestion(message, context)) {
+            return this.generateFollowUpResponse(message, context);
+        }
+        
+        // Проверяем математические выражения
+        if (this.containsMath(message)) {
+            this.calculateMath(message);
+            return;
+        }
+        
+        // Проверяем приветствия
+        if (this.isGreeting(message)) {
+            return this.getContextualGreeting(context);
+        }
+        
+        // Проверяем прощания
+        if (this.isGoodbye(message)) {
+            return this.getContextualGoodbye(context);
+        }
+        
+        // Личные вопросы
+        if (this.isPersonalQuestion(message)) {
+            return this.getPersonalResponse();
+        }
+        
+        // Общие вопросы
+        if (this.containsQuestion(message)) {
+            return this.getContextualQuestionResponse(message, context);
+        }
+        
+        // Ответ с учетом предыдущей беседы
+        return this.getContextualConversationalResponse(message, context);
+    }
+
+    // Получение релевантного контекста
+    getRelevantContext() {
+        if (this.conversationContext.length === 0) return [];
+        
+        // Берем последние 5 сообщений для анализа
+        return this.conversationContext.slice(-5);
+    }
+
+    // Проверка является ли вопрос продолжением предыдущей темы
+    isFollowUpQuestion(message, context) {
+        if (context.length < 2) return false;
+        
+        const lastUserMessage = context[context.length - 2]; // Предыдущее сообщение пользователя
+        const currentMessage = message.toLowerCase();
+        
+        const followUpIndicators = [
+            'а', 'и', 'еще', 'также', 'кстати', 'кроме того',
+            'что насчет', 'а как же', 'а если', 'а почему',
+            'расскажи подробнее', 'объясни', 'уточни'
+        ];
+        
+        return followUpIndicators.some(indicator => 
+            currentMessage.includes(indicator)
+        ) || this.isDirectReference(lastUserMessage.text, currentMessage);
+    }
+
+    // Проверка прямых ссылок на предыдущие сообщения
+    isDirectReference(previousMessage, currentMessage) {
+        const references = ['это', 'то', 'такой', 'такая', 'такое', 'такие', 'он', 'она', 'оно', 'они'];
+        return references.some(ref => currentMessage.includes(ref)) && 
+               previousMessage.length > 10; // Только для содержательных сообщений
+    }
+
+    // Генерация ответа-продолжения
+    generateFollowUpResponse(message, context) {
+        const lastUserMessage = context[context.length - 2].text;
+        const lastBotMessage = context[context.length - 1].text;
+        
+        if (lastUserMessage.includes('игр') || lastBotMessage.includes('игр')) {
+            return this.getGamesFollowUp(message);
+        }
+        
+        if (lastUserMessage.includes('конвертер') || lastBotMessage.includes('конвертер')) {
+            return "Конвертер валют поддерживает 150+ валют и работает офлайн! Хочешь попробовать?";
+        }
+        
+        if (lastUserMessage.includes('заметк') || lastBotMessage.includes('заметк')) {
+            return "В заметках можно создавать списки дел, сохранять важные мысли и организовывать их по категориям!";
+        }
+        
+        if (lastUserMessage.includes('бюджет') || lastBotMessage.includes('бюджет')) {
+            return "Neuron Budget помогает отслеживать доходы и расходы, ставить финансовые цели!";
+        }
+        
+        return "Рассказать подробнее об этом? Или может быть, попробуешь один из наших инструментов?";
+    }
+
+    // Продолжение темы игр
+    getGamesFollowUp(message) {
+        if (message.includes('2048')) {
+            return "2048 - классическая головоломка! Нужно соединять одинаковые числа чтобы получить 2048. Отличная тренировка для мозга!";
+        }
+        
+        if (message.includes('memory') || message.includes('памят')) {
+            return "Memory Cards развивают концентрацию и память! Найди все пары карточек за минимальное время!";
+        }
+        
+        if (message.includes('матема') || message.includes('счита')) {
+            return "Math Challenge - веселая математика! Решай примеры на время и ставь рекорды!";
+        }
+        
+        return "В Game Hub есть игры на любой вкус: головоломки, аркады, обучающие! Какую хочешь попробовать?";
+    }
+
+    // Контекстные приветствия
+    getContextualGreeting(context) {
+        if (context.length > 2) {
+            const timeSinceLastMessage = Date.now() - context[context.length - 1].timestamp;
+            const minutesAgo = Math.floor(timeSinceLastMessage / 60000);
+            
+            if (minutesAgo < 5) {
+                return "С возвращением! Продолжим наш разговор? 😊";
+            } else if (minutesAgo < 30) {
+                return "Снова здравствуй! Рад тебя видеть снова! 🌟";
+            }
+        }
+        
+        return this.getGreeting();
+    }
+
+    // Контекстные прощания
+    getContextualGoodbye(context) {
+        const conversationLength = context.filter(msg => msg.sender === 'user').length;
+        
+        if (conversationLength > 3) {
+            return "Было приятно пообщаться! Надеюсь, я был полезен. Возвращайся! 🤗";
+        }
+        
+        return this.getGoodbye();
+    }
+
+    // Контекстные ответы на вопросы
+    getContextualQuestionResponse(message, context) {
+        // Анализируем тему разговора
+        const conversationTheme = this.detectConversationTheme(context);
+        
+        if (conversationTheme === 'games' && message.includes('рекоменд')) {
+            return "Рекомендую начать с 2048 - она отлично развивает логику! Или может Memory Cards для тренировки памяти?";
+        }
+        
+        if (conversationTheme === 'tools' && message.includes('лучш')) {
+            return "Все наши инструменты по-своему хороши! Для учебы - Neuron Study, для финансов - конвертер и бюджет, для развлечений - игры!";
+        }
+        
+        if (conversationTheme === 'team' && message.includes('планы')) {
+            return "Мы постоянно работаем над новыми функциями! Скоро появятся новые игры и инструменты. Следи за обновлениями! 🚀";
+        }
+        
+        return this.generateSmartResponse(message);
+    }
+
+    // Контекстные разговорные ответы
+    getContextualConversationalResponse(message, context) {
+        const theme = this.detectConversationTheme(context);
+        
+        const contextualResponses = {
+            'games': [
+                "Продолжаем тему игр? Может, откроем Game Hub и выберем что-то новенькое? 🎮",
+                "Игры - это здорово! Есть любимый жанр? Могу порекомендовать что-то из нашей коллекции!",
+                "Обожаю обсуждать игры! В нашей коллекции каждый найдет что-то по душе!",
+            ],
+            'tools': [
+                "Говорим об инструментах? Какой из наших сервисов тебе нравится больше всего? 🛠️",
+                "Инструменты Neuron созданы чтобы упростить жизнь! Какой хочешь попробовать?",
+                "Обсуждаем полезные функции? Все наши инструменты бесплатны и работают без регистрации!",
+            ],
+            'team': [
+                "Команда Neuron всегда рада обратной связи! Есть идеи для улучшения? 💡",
+                "Мы, молодые разработчики, ценим каждое мнение! Что думаешь о наших проектах?",
+                "Создавать проекты в 14 лет - это вызов, но мы справляемся! Поддерживаешь нас? ✨",
+            ],
+            'default': [
+                "Интересно! Продолжим беседу? Может, расскажешь что думаешь о наших сервисах? 😊",
+                "Люблю такие разговоры! Кстати, не хочешь посмотреть что-то из Neuron Ecosystem? 🚀",
+                "Приятно общаться! Напомнить, какие у нас есть крутые инструменты? 💫",
+                "Продолжаем диалог? Может, перейдем к чему-то практическому? 🎯",
+            ]
+        };
+        
+        const responses = contextualResponses[theme] || contextualResponses.default;
+        return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    // Определение темы разговора
+    detectConversationTheme(context) {
+        const recentMessages = context.slice(-3).map(msg => msg.text).join(' ').toLowerCase();
+        
+        if (recentMessages.includes('игр') || recentMessages.includes('game')) {
+            return 'games';
+        }
+        
+        if (recentMessages.includes('инструмент') || recentMessages.includes('сервис') || 
+            recentMessages.includes('конвертер') || recentMessages.includes('бюджет') || 
+            recentMessages.includes('заметк') || recentMessages.includes('студ')) {
+            return 'tools';
+        }
+        
+        if (recentMessages.includes('команда') || recentMessages.includes('разработчик') || 
+            recentMessages.includes('создатель') || recentMessages.includes('возраст')) {
+            return 'team';
+        }
+        
+        return 'default';
+    }
+
+    // Полноэкранный режим
+    toggleFullscreen() {
+        const widget = document.getElementById('aiWidget');
+        widget.classList.toggle('fullscreen');
+        
+        if (widget.classList.contains('fullscreen')) {
+            this.sendResponse('Переключаю в полноэкранный режим! 🖥️');
+            document.body.style.overflow = 'hidden';
+        } else {
+            this.sendResponse('Возвращаю в обычный режим! 📱');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Перефокусировка на input
+        setTimeout(() => {
+            document.getElementById('aiInput').focus();
+        }, 300);
+    }
+
+    // Очистка контекста
+    clearContext() {
+        this.conversationContext = [];
+        this.saveContext();
+        this.sendResponse('Начинаем новую тему! О чем хочешь поговорить? 💫');
+    }
+
+    // Сохранение контекста
+    saveContext() {
+        try {
+            localStorage.setItem('neuronAI_context', JSON.stringify(this.conversationContext));
+        } catch (e) {
+            console.log('Не удалось сохранить контекст');
+        }
+    }
+
+    // Загрузка контекста
+    loadContext() {
+        try {
+            const saved = localStorage.getItem('neuronAI_context');
+            if (saved) {
+                this.conversationContext = JSON.parse(saved);
+            }
+        } catch (e) {
+            this.conversationContext = [];
+        }
     }
 
     findLocalResponse(message) {
@@ -97,7 +385,7 @@ class NeuronAI {
         return null;
     }
 
-    // Математические вычисления
+    // Математические вычисления (остается без изменений)
     calculateMath(message) {
         try {
             let expression = message
@@ -154,48 +442,7 @@ class NeuronAI {
     }
 
     generateSmartResponse(message) {
-        if (this.containsMath(message)) {
-            this.calculateMath(message);
-            return;
-        }
-        
-        if (this.isGreeting(message)) {
-            return this.getGreeting();
-        }
-        
-        if (this.isGoodbye(message)) {
-            return this.getGoodbye();
-        }
-        
-        if (this.isPersonalQuestion(message)) {
-            const responses = [
-                "Я AI, поэтому у меня нет чувств как у человека, но я всегда рад помогать! 😊",
-                "Как искусственный интеллект, я не испытываю эмоций, но моя цель - быть полезным для тебя! 🌟",
-                "У меня нет настроения в человеческом понимании, но я всегда готов к продуктивному диалогу! 💪",
-                "Я программа, поэтому не могу грустить или радоваться, но мне нравится наш разговор! ✨"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        }
-        
-        if (this.containsQuestion(message)) {
-            const responses = [
-                "Интересный вопрос! Как AI-помощник Neuron, я специализируюсь в наших сервисах. Могу рассказать о них подробнее!",
-                "Отличный вопрос! Пока я лучше всего разбираюсь в экосистеме Neuron. Хочешь узнать о наших инструментах?",
-                "Занимательный вопрос! Рекомендую попробовать наши сервисы - они бесплатны и очень полезны!",
-                "Как AI Neuron, я постоянно учусь. А сейчас могу помочь тебе с нашими проектами - они действительно крутые! 🚀"
-            ];
-            return responses[Math.floor(Math.random() * responses.length)];
-        }
-        
-        const conversationalResponses = [
-            "Расскажи, что тебя интересует? Могу показать наши сервисы или просто поболтать! 😊",
-            "Интересно! А что ты думаешь о наших проектах? Есть любимый инструмент? 🛠️",
-            "Классно общаться! Может, попробуешь какой-то из наших сервисов? Они бесплатные! 🎯",
-            "Люблю такие беседы! Кстати, не хочешь посмотреть, что нового в Neuron Ecosystem? 🚀",
-            "Приятно поболтать! Напомнить, какие у нас есть крутые инструменты? 💫"
-        ];
-        
-        return conversationalResponses[Math.floor(Math.random() * conversationalResponses.length)];
+        // ... (предыдущая реализация)
     }
 
     containsMath(text) {
@@ -223,7 +470,17 @@ class NeuronAI {
         return questionWords.some(word => text.toLowerCase().includes(word)) || text.includes('?');
     }
 
-    // Навигация по экосистеме
+    getPersonalResponse() {
+        const responses = [
+            "Я AI, поэтому у меня нет чувств как у человека, но я всегда рад помогать! 😊",
+            "Как искусственный интеллект, я не испытываю эмоций, но моя цель - быть полезным для тебя! 🌟",
+            "У меня нет настроения в человеческом понимании, но я всегда готов к продуктивному диалогу! 💪",
+            "Я программа, поэтому не могу грустить или радоваться, но мне нравится наш разговор! ✨"
+        ];
+        return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    // Навигация по экосистеме (остается без изменений)
     showHelp() {
         const helpText = `
 🎯 **Neuron Ecosystem - Полный гид:**
@@ -252,6 +509,12 @@ class NeuronAI {
 💬 **Общение:**
 Могу пошутить, дать совет или просто поболтать!
 
+🖥️ **Управление чатом:**
+"полный экран" - развернуть чат
+"обычный режим" - вернуть обратно
+"очисти чат" - очистить историю
+"новая тема" - начать заново
+
 💡 **Примеры команд:**
 "открой игры", "телеграм", "посчитай 25*4", "расскажи о себе", "шутка"
 
@@ -260,6 +523,7 @@ class NeuronAI {
         this.sendResponse(helpText);
     }
 
+    // ... остальные методы навигации остаются без изменений
     openGames() {
         this.sendResponse('Открываю Game Hub... 🎮');
         setTimeout(() => {
@@ -330,7 +594,6 @@ class NeuronAI {
         }, 1000);
     }
 
-    // Соцсети
     openTelegram() {
         this.sendResponse('Открываю Telegram канал... 📢');
         setTimeout(() => {
@@ -365,7 +628,7 @@ class NeuronAI {
         this.sendResponse(socialsText);
     }
 
-    // Разговорные ответы
+    // Разговорные ответы (остаются без изменений)
     getGreeting() {
         const greetings = [
             "Привет-привет! 🎉 Рад тебя видеть! Как твои дела?",
@@ -396,7 +659,7 @@ class NeuronAI {
             "Пожалуйста! Надеюсь, я был полезен! 💫",
             "Обращайся! Буду рад помочь снова! 🚀"
         ];
-        return thanks[Math.floor(Math.random() * thanks.length)];
+        return thanks[Math.floor(Math.random() * responses.length)];
     }
 
     getGoodbye() {
@@ -506,6 +769,7 @@ class NeuronAI {
 
     sendResponse(text) {
         this.addMessage(text, 'bot');
+        this.addToContext(text, 'bot');
     }
 
     showTypingIndicator() {
@@ -550,6 +814,7 @@ class NeuronAI {
         } catch (e) {
             this.chatHistory = [];
         }
+        this.loadContext();
     }
 
     renderChatHistory() {
@@ -567,6 +832,7 @@ class NeuronAI {
                     <button onclick="sendQuickCommand('игры')">🎮 Игры</button>
                     <button onclick="sendQuickCommand('конвертер')">💱 Конвертер</button>
                     <button onclick="sendQuickCommand('заметки')">📝 Заметки</button>
+                    <button onclick="sendQuickCommand('полный экран')">🖥️ Полный экран</button>
                 </div>
             </div>
         `;
@@ -649,6 +915,7 @@ function clearChat() {
     if (confirm('Очистить историю чата?')) {
         neuronAI.chatHistory = [];
         neuronAI.saveChatHistory();
+        neuronAI.clearContext();
         document.getElementById('aiChat').innerHTML = `
             <div class="ai-message bot-message">
                 <div class="message-avatar">🧠</div>
@@ -659,11 +926,16 @@ function clearChat() {
                         <button onclick="sendQuickCommand('игры')">🎮 Игры</button>
                         <button onclick="sendQuickCommand('конвертер')">💱 Конвертер</button>
                         <button onclick="sendQuickCommand('заметки')">📝 Заметки</button>
+                        <button onclick="sendQuickCommand('полный экран')">🖥️ Полный экран</button>
                     </div>
                 </div>
             </div>
         `;
     }
+}
+
+function toggleFullscreen() {
+    neuronAI.toggleFullscreen();
 }
 
 // Инициализация при загрузке
