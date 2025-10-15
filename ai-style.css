@@ -305,3 +305,62 @@ body {
         right: 10px;
     }
 }
+
+/* Добавь эти стили в ai-style.css */
+
+/* Полноэкранный режим */
+.ai-widget.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0;
+    z-index: 10000;
+    border: none;
+}
+
+.ai-widget.fullscreen .ai-header {
+    border-radius: 0;
+}
+
+.ai-widget.fullscreen .ai-chat {
+    height: calc(100vh - 140px);
+}
+
+/* Адаптация для полноэкранного режима */
+@media (min-width: 768px) {
+    .ai-widget.fullscreen {
+        max-width: none;
+    }
+    
+    .ai-widget.fullscreen .message-content {
+        max-width: 70%;
+    }
+}
+
+/* Улучшенные быстрые команды */
+.quick-commands {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.quick-commands button {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.quick-commands button:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
