@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     const loadChatHistory = () => {
         const storedHistory = localStorage.getItem(CHAT_STORAGE_KEY);
-        chatWindow.innerHTML = ''; // Очищаем контейнер
+        chatWindow.innerHTML = ''; 
 
         if (storedHistory) {
             try {
@@ -102,10 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Добавляем начальное сообщение от AI, только если история пуста
         if (chatHistory.length === 0) {
             const initialMessage = "🪐 Приветствую, Астронавт! Я Нейронный Навигатор, ядро искусственного интеллекта Neuron Ecosystem. Готов проКакое созвездие Neuron вас интересует сегодня?есует сегодня?**";
-            appendMessage(initialMessage, 'ai', true); // Сохраняем это приветствие для начала истории
+            appendMessage(initialMessage, 'ai', true); 
         }
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
@@ -125,13 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', ${sender}-message);
         
-  текстЗамена **текст** на <strong>текст</strong> и обработка ссылок
         let formattedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         messageDiv.innerHTML = <p>${formattedMessage}</p>;
         
         chatWindow.appendChild(messageDiv);
-
-                if (save) {
+    if (save) {
             chatHistory.push({ text: message, sender: sender });
             saveChatHistory();
         }
@@ -139,21 +136,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const processUserInput = () => {
         const query = userInput.value.trim();
-        if (!query) return;
+        if (!query) {
+            userInput.value = ''; // Очистка, даже если пустой
+            return;
+        }
 
         // 1. Команда очистки истории
         if (query.toLowerCase().trim() === "очистить историю") {
             appendMessage(query, 'user');
             
-            // Задержка для эффекта
             setTimeout(() => {
                 const clearResponse = navigator.get_response(query);
                 localStorage.removeItem(CHAT_STORAGE_KEY);
                 chatHistory = [];
                 
-                appendMessage(clearResponse, 'ai', false); // Не сохраняем в историю, т.к. она пуста
+                appendMessage(clearResponse, 'ai', false); 
                 
-                // Перезагружаем чат, чтобы появилось только стартовое сообщение
                 loadChatHistory();
             }, 500);
             
@@ -180,15 +178,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
     
-    // Загрузка истории при старте
     loadChatHistory(); 
 
     // Отправка по кнопке
     sendBtn.addEventListener('click', processUserInput);
 
-    // Отправка по нажатию Enter
+    // Отправка по нажатию Enter (для ПК)
+    // Добавлена проверка на ключ 'Enter' или 'NumpadEnter'
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
+            e.preventDefault(); // Предотвращаем стандартное поведение (например, перенос строки)
             processUserInput();
         }
     });
