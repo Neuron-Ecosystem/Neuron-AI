@@ -3,54 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neuron AI - Умный помощник</title>
-    <link rel="stylesheet" href="ai-style.css">
+    <title>Нейронный Навигатор | AI Neuron Ecosystem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="ai-container">
-        <!-- AI Widget -->
-        <div class="ai-widget" id="aiWidget">
-            <div class="ai-header">
-                <div class="ai-avatar">🧠</div>
-                <div class="ai-info">
-                    <h3>Neuron AI</h3>
-                    <span class="ai-status">Онлайн</span>
-                </div>
-                <button class="ai-close" onclick="toggleAI()">×</button>
+
+    <div class="navigator-container">
+        <header class="navigator-header">
+            <span class="logo">🚀</span>
+            <h1>НЕЙРОННЫЙ НАВИГАТОР</h1>
+            <p class="status-light">Онлайн: Активный Нейрон</p>
+        </header>
+
+        <div class="chat-window" id="chat-window">
             </div>
-            
-            <div class="ai-chat" id="aiChat">
-                <div class="ai-message bot-message">
-                    <div class="message-avatar">🧠</div>
-                    <div class="message-content">
-                        <p>Привет! Я Neuron AI - ваш помощник в экосистеме Neuron. Чем могу помочь?</p>
-                        <div class="quick-commands">
-                            <button onclick="sendQuickCommand('помощь')">🆘 Помощь</button>
-                            <button onclick="sendQuickCommand('игры')">🎮 Игры</button>
-                            <button onclick="sendQuickCommand('конвертер')">💱 Конвертер</button>
-                            <button onclick="sendQuickCommand('заметки')">📝 Заметки</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="ai-input-container">
-                <div class="ai-tools">
-                    <button onclick="startVoiceInput()">🎤</button>
-                    <button onclick="clearChat()">🗑️</button>
-                </div>
-                <input type="text" id="aiInput" placeholder="Спросите меня о чем-либо..." onkeypress="handleAIInput(event)">
-                <button onclick="sendAIMessage()">➤</button>
-            </div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Введите ваш запрос или 'очистить историю'..." autofocus>
+            <button id="send-btn" title="Отправить Запрос">Трансляция</button>
         </div>
         
-        <!-- AI Trigger Button -->
-        <button class="ai-trigger" onclick="toggleAI()">
-            <span class="ai-pulse"></span>
-            🧠
-        </button>
+        <nav class="quick-links">
+            <a href="neuron-p2p.ru" target="_blank">Главный Сайт</a>
+            <a href="https://t.me/neuron_ecosystem" target="_blank">Telegram Канал</a>
+            <a href="#" id="contact-info-btn">Центр Связи</a>
+        </nav>
     </div>
 
-    <script src="neuron-ai.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
