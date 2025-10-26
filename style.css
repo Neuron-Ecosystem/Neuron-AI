@@ -1,0 +1,160 @@
+/* Переменные для стилистики Neuron */
+:root {
+    --bg-dark: #0A0F1E; /* Глубокий космос */
+    --accent-blue: #00FFFF; /* Неоновый синий (циановый) */
+    --accent-purple: #9D3CFF; /* Фиолетовый градиент */
+    --text-light: #E0E7FF;
+    --window-bg: rgba(10, 20, 50, 0.7); /* Прозрачное окно голограммы */
+    --border-glow: 1px solid var(--accent-blue);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    font-family: 'Roboto', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    /* Фон с радиальным градиентом для имитации звездного света */
+    background-image: radial-gradient(circle at 50% 50%, rgba(0, 150, 255, 0.1), transparent 80%);
+}
+
+.navigator-container {
+    width: 100%;
+    max-width: 650px;
+    background: var(--window-bg);
+    border: var(--border-glow);
+    border-radius: 15px;
+    /* Эффект свечения */
+    box-shadow: 0 0 40px var(--accent-purple), inset 0 0 10px rgba(0, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Заголовок */
+.navigator-header {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 2px solid var(--accent-blue);
+}
+
+.navigator-header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8em;
+    color: var(--accent-blue);
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+    margin: 5px 0;
+}
+
+.status-light {
+    font-size: 0.8em;
+    color: #4CAF50; /* Зеленый - Активен */
+    text-shadow: 0 0 5px #4CAF50;
+}
+
+/* Окно Диалога (Консоль) */
+.chat-window {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    height: 400px;
+    border-bottom: 1px dashed rgba(0, 255, 255, 0.2);
+    scrollbar-color: var(--accent-blue) var(--window-bg);
+    scrollbar-width: thin;
+}
+
+.message {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    line-height: 1.5;
+}
+
+.ai-message {
+    background: rgba(157, 60, 255, 0.15); /* Фиолетовый фон AI */
+    border-left: 3px solid var(--accent-purple);
+    color: var(--text-light);
+    text-align: left;
+}
+
+.user-message {
+    background: rgba(0, 255, 255, 0.15); /* Голубой фон Пользователя */
+    border-right: 3px solid var(--accent-blue);
+    text-align: right;
+    margin-left: 20%;
+}
+.user-message p, .ai-message p {
+    margin: 0;
+}
+.ai-message a {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
+
+/* Поле Ввода */
+.input-area {
+    display: flex;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 12px;
+    border: 1px solid var(--accent-blue);
+    background: var(--bg-dark);
+    color: var(--text-light);
+    border-radius: 5px 0 0 5px;
+    font-size: 1em;
+    outline: none;
+}
+
+#send-btn {
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+    color: var(--text-light);
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 0 5px 5px 0;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+#send-btn:hover {
+    background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+}
+
+/* Навигация */
+.quick-links {
+    padding: 10px 15px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+    border-top: 1px solid rgba(0, 255, 255, 0.1);
+}
+.quick-links a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    margin: 0 10px;
+    padding: 5px 10px;
+    border-bottom: 1px dashed transparent;
+    transition: border-bottom 0.2s;
+}
+.quick-links a:hover {
+    border-bottom: 1px dashed var(--accent-purple);
+}
+
+/* Адаптивность */
+@media (max-width: 600px) {
+    .navigator-container {
+        border-radius: 0;
+        min-height: 100vh;
+    }
+}
