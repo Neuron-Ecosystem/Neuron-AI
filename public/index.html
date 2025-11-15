@@ -4,35 +4,149 @@
     <meta charset="UTF-8">
     <title>Neuron AI</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; }
-        textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; }
-        #output { border: 1px solid #ccc; padding: 15px; min-height: 50px; background-color: #f9f9f9; white-space: pre-wrap; }
+        /* ================================================= */
+        /* == СТИЛИЗАЦИЯ ПОД NEURON ECOSYSTEM == */
+        /* ================================================= */
+        :root {
+            /* Темно-фиолетовый фон с сайта neuron-p2p.ru */
+            --bg-color: #170e28; 
+            /* Основной цвет текста (белый) */
+            --text-color: #e0e0e0;
+            /* Цвет основного акцента (пурпурно-фиолетовый) */
+            --accent-color: #9333ea; 
+            /* Цвет для рамок и фона ввода (темный, но светлее фона) */
+            --input-bg: #281a3d; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            max-width: 760px; /* Сделаем чуть шире */
+            margin: 0 auto;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        /* Заголовки */
+        h1, h2 {
+            color: var(--accent-color);
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        /* Главный контейнер для чата */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        /* Блок для ответов (Ответ должен быть СВЕРХУ) */
+        #output {
+            order: 1; /* Размещаем сверху */
+            margin-bottom: 20px;
+            padding: 15px;
+            min-height: 100px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px; /* Слегка скруглим края */
+            white-space: pre-wrap;
+        }
+
+        /* Панель ввода (должна быть СНИЗУ) */
+        .input-panel {
+            order: 2; /* Размещаем снизу */
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: var(--input-bg);
+            border-radius: 12px;
+            border: 1px solid var(--input-bg);
+        }
+
+        /* Поле ввода (textarea) */
+        textarea {
+            flex-grow: 1;
+            height: 50px; /* Фиксированная высота как у Gemini */
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            resize: none; /* Убираем возможность менять размер */
+            font-size: 16px;
+            box-shadow: none;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        /* Стилизация кнопки */
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 20px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #a049f7; /* Немного светлее при наведении */
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Иконка мозга */
+        .logo {
+            font-size: 3rem;
+            display: block;
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>🧠 Neuron AI (Ваш личный ассистент)</h1>
+    <div class="logo">🧠</div>
+    <h1>Neuron AI (Ваш личный ассистент)</h1>
     
-    <textarea id="promptInput" placeholder="Введите ваш запрос сюда..."></textarea>
-    <button onclick="sendPrompt()">Отправить</button>
+    <div class="chat-container">
 
-    <h2>Ответ:</h2>
-    <div id="output">Здесь появится ответ...</div>
+        <h2>Ответ:</h2>
+        <div id="output">Здесь появится ответ...</div>
+
+        <div class="input-panel">
+            <textarea id="promptInput" placeholder="Введите ваш запрос сюда..."></textarea>
+            <button onclick="sendPrompt()">Отправить</button>
+        </div>
+
+    </div>
 
     <script>
         async function sendPrompt() {
             const promptText = document.getElementById('promptInput').value;
             const outputDiv = document.getElementById('output');
+            
+            if (!promptText.trim()) return; // Не отправлять пустой запрос
+
             outputDiv.innerText = "Думаю...";
 
             try {
-                // Отправляем запрос на наш ПРОКСИ-СЕРВЕР (/api/chat)
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        // Передаем прокси-серверу сообщение пользователя
                         messages: [{ role: "user", content: promptText }]
                     })
                 });
@@ -40,10 +154,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Ответ от прокси-сервера содержит ответ от модели
                     outputDiv.innerText = data.response;
                 } else {
-                    // Обработка ошибок, если прокси-сервер вернул ошибку
                     outputDiv.innerText = `Ошибка: ${data.error || 'Неизвестная ошибка'}`;
                 }
 
