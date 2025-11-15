@@ -1,18 +1,18 @@
-// Файл: /api/chat.js (ФИНАЛЬНАЯ ВЕРСИЯ для Gemini с явной Edge Config)
+// Файл: /api/chat.js
 
-// Явно указываем Vercel, что это Edge Function
+// Явно указываем Vercel, что это Edge Function для обеспечения совместимости с request.json()
 export const config = {
   runtime: 'edge',
 };
 
 import { GoogleGenAI } from '@google/genai';
 
-// Клиент Gemini
+// Инициализируем клиента Gemini. Он использует GEMINI_API_KEY из настроек Vercel.
 const ai = new GoogleGenAI({}); 
 
 export default async function handler(request) {
   
-  // 1. Проверка метода запроса
+  // Проверка метода запроса
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Метод не разрешен' }), {
       status: 405,
@@ -21,23 +21,23 @@ export default async function handler(request) {
   }
 
   try {
-    // 2. ИСПРАВЛЕНИЕ: Получаем тело запроса (работает с Edge Config)
+    // Получаем тело запроса (работает с Edge Config)
     const body = await request.json();
     const { messages } = body;
     
-    // 3. Преобразование формата сообщений
+    // Преобразование формата сообщений из Frontend (OpenAI style) в формат Gemini
     const contents = messages.map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
     }));
 
-    // 4. Отправка запроса в Gemini
+    // Отправка запроса в Gemini Pro Flash
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash', 
       contents: contents,
     });
 
-    // 5. Возвращаем успешный ответ
+    // Возвращаем успешный ответ
     return new Response(JSON.stringify({ 
         response: response.text 
     }), {
@@ -46,7 +46,7 @@ export default async function handler(request) {
     });
 
   } catch (error) {
-    // 6. Обработка ошибок
+    // Обработка ошибок
     console.error("КРИТИЧЕСКАЯ ОШИБКА:", error.message);
     
     const errorMessage = error.message || 'Неизвестная ошибка прокси-сервера.';
@@ -54,7 +54,7 @@ export default async function handler(request) {
 
     // Возвращаем понятное сообщение об ошибке в браузер
     return new Response(JSON.stringify({ 
-      error: `Ошибка API: ${status}. Проверьте ключ Gemini.`,
+      error: `Ошибка API ${status}. Проверьте ключ Gemini.`,
       details: errorMessage
     }), {
       status: status,
