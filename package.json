@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Прокси для нейронного ИИ с использованием функций Vercel",
   "main": "index.js",
-  "type": "module",  <-- ЭТО КРИТИЧЕСКИ ВАЖНО
+  "type": "module",  
   "scripts": {
     "start": "echo 'No start script needed for Vercel'",
     "test": "echo \"Error: no test specified\" && exit 1"
