@@ -1,0 +1,14 @@
+{
+  "name": "neuron-ai-proxy",
+  "version": "1.0.0",
+  "description": "Proxy for Neuron AI using Vercel Functions",
+  "main": "index.js",
+  "scripts": {
+    "start": "echo 'No start script needed for Vercel'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "openai": "^4.24.1" 
+    // ^ Vercel увидит это и автоматически установит библиотеку!
+  }
+}
