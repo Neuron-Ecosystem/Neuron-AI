@@ -16,13 +16,15 @@
             --accent-color: #9333ea; 
             /* Цвет для рамок и фона ввода (темный, но светлее фона) */
             --input-bg: #281a3d; 
+            /* Цвет более светлого фона для выделения поля */
+            --input-highlight-bg: #32214d;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            max-width: 760px; /* Сделаем чуть шире */
+            max-width: 760px;
             margin: 0 auto;
             padding: 40px 20px;
             min-height: 100vh;
@@ -51,7 +53,7 @@
             min-height: 100px;
             background-color: var(--input-bg);
             border: 1px solid var(--accent-color);
-            border-radius: 8px; /* Слегка скруглим края */
+            border-radius: 8px;
             white-space: pre-wrap;
         }
 
@@ -63,25 +65,31 @@
             width: 100%;
             margin-top: 20px;
             padding: 10px;
-            background-color: var(--input-bg);
+            background-color: var(--input-highlight-bg); /* Более светлый фон для заметности */
             border-radius: 12px;
-            border: 1px solid var(--input-bg);
+            /* Добавляем яркую рамку при фокусе для заметности */
+            border: 2px solid transparent; 
+            transition: border-color 0.3s;
+        }
+        
+        /* Эффект фокуса для всей панели */
+        .input-panel:focus-within {
+             border-color: var(--accent-color); 
         }
 
         /* Поле ввода (textarea) */
         textarea {
             flex-grow: 1;
-            height: 50px; /* Фиксированная высота как у Gemini */
+            height: 50px;
             padding: 15px;
             border: none;
             border-radius: 8px;
-            background-color: var(--input-bg);
+            background-color: var(--input-highlight-bg);
             color: var(--text-color);
-            resize: none; /* Убираем возможность менять размер */
+            resize: none;
             font-size: 16px;
             box-shadow: none;
             outline: none;
-            transition: border-color 0.3s;
         }
 
         /* Стилизация кнопки */
@@ -98,7 +106,7 @@
         }
 
         button:hover {
-            background-color: #a049f7; /* Немного светлее при наведении */
+            background-color: #a049f7;
         }
         
         button:active {
@@ -133,7 +141,8 @@
 
     <script>
         async function sendPrompt() {
-            const promptText = document.getElementById('promptInput').value;
+            const promptInput = document.getElementById('promptInput'); // Сохраняем ссылку на поле ввода
+            const promptText = promptInput.value;
             const outputDiv = document.getElementById('output');
             
             if (!promptText.trim()) return; // Не отправлять пустой запрос
@@ -155,6 +164,7 @@
 
                 if (response.ok) {
                     outputDiv.innerText = data.response;
+                    promptInput.value = ''; // <--- ПРАВКА 1: Очистка поля ввода
                 } else {
                     outputDiv.innerText = `Ошибка: ${data.error || 'Неизвестная ошибка'}`;
                 }
