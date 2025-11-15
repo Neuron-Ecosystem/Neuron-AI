@@ -1,99 +1,57 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neuron AI</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #1e1e1e;
-      color: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    h1 { color: #ff6600; }
-    #chat {
-      width: 100%;
-      max-width: 600px;
-      height: 400px;
-      background: #2e2e2e;
-      border-radius: 10px;
-      padding: 10px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-    }
-    .message { margin: 5px 0; }
-    .user { color: #00ffcc; }
-    .ai { color: #ffcc00; }
-    #input-container { display: flex; width: 100%; max-width: 600px; }
-    #prompt { flex: 1; padding: 10px; border-radius: 5px; border: none; font-size: 16px; }
-    #send { padding: 10px 20px; margin-left: 10px; border: none; border-radius: 5px; background: #ff6600; color: #fff; font-size: 16px; cursor: pointer; }
-    #send:hover { background: #ff8533; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Neuron AI</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; }
+        #output { border: 1px solid #ccc; padding: 15px; min-height: 50px; background-color: #f9f9f9; white-space: pre-wrap; }
+    </style>
 </head>
 <body>
+    <h1>🧠 Neuron AI (Ваш личный ассистент)</h1>
+    
+    <textarea id="promptInput" placeholder="Введите ваш запрос сюда..."></textarea>
+    <button onclick="sendPrompt()">Отправить</button>
 
-  <h1>Neuron AI</h1>
-  <div id="chat"></div>
+    <h2>Ответ:</h2>
+    <div id="output">Здесь появится ответ...</div>
 
-  <div id="input-container">
-    <input type="text" id="prompt" placeholder="Напиши что-нибудь..." />
-    <button id="send">Отправить</button>
-  </div>
+    <script>
+        async function sendPrompt() {
+            const promptText = document.getElementById('promptInput').value;
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerText = "Думаю...";
 
-  <script>
-    const chat = document.getElementById('chat');
-    const promptInput = document.getElementById('prompt');
-    const sendBtn = document.getElementById('send');
+            try {
+                // Отправляем запрос на наш ПРОКСИ-СЕРВЕР (/api/chat)
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        // Передаем прокси-серверу сообщение пользователя
+                        messages: [{ role: "user", content: promptText }]
+                    })
+                });
 
-    // Вставь сюда свой Pipedream endpoint
-    const PROXY_URL = 'https://eot9qg9uodsjhl0.m.pipedream.net';
+                const data = await response.json();
 
-    function appendMessage(text, className) {
-      const div = document.createElement('div');
-      div.className = 'message ' + className;
-      div.textContent = text;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
+                if (response.ok) {
+                    // Ответ от прокси-сервера содержит ответ от модели
+                    outputDiv.innerText = data.response;
+                } else {
+                    // Обработка ошибок, если прокси-сервер вернул ошибку
+                    outputDiv.innerText = `Ошибка: ${data.error || 'Неизвестная ошибка'}`;
+                }
 
-    async function sendPrompt() {
-      const prompt = promptInput.value.trim();
-      if (!prompt) return;
-      appendMessage(prompt, 'user');
-      promptInput.value = '';
-
-      try {
-        const response = await fetch(PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo", // или gpt-4 если доступно
-            messages: [{ role: "user", content: prompt }]
-          })
-        });
-
-        const data = await response.json();
-
-        // OpenAI API возвращает messages в массиве
-        const aiText = data?.choices?.[0]?.message?.content || "Ошибка ответа AI";
-        appendMessage(aiText, 'ai');
-
-      } catch (err) {
-        console.error(err);
-        appendMessage("Ошибка соединения с AI", 'ai');
-      }
-    }
-
-    sendBtn.addEventListener('click', sendPrompt);
-    promptInput.addEventListener('keypress', e => {
-      if (e.key === 'Enter') sendPrompt();
-    });
-  </script>
+            } catch (error) {
+                console.error('Ошибка сети или клиента:', error);
+                outputDiv.innerText = 'Проблема с подключением. Проверьте консоль.';
+            }
+        }
+    </script>
 </body>
 </html>
