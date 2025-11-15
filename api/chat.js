@@ -1,46 +1,41 @@
-// api/deepseek.js
-// Vercel serverless function — прокси для DeepSeek
-// Требует переменной окружения DEEPSEEK_KEY в настройках Vercel (не хранить в коде)
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Only POST allowed' });
-  }
+// Файл: /api/chat.js
 
-  const DEEPSEEK_KEY = process.env.DEEPSEEK_KEY;
-  if (!DEEPSEEK_KEY) {
-    return res.status(500).json({ error: 'DEEPSEEK_KEY not configured on the server' });
-  }
+import { OpenAI } from 'openai';
 
-  const body = req.body || {};
-  // Валидация минимальная
-  if (!body.prompt) return res.status(400).json({ error: 'prompt is required' });
+// Инициализируем клиента OpenAI.
+// Vercel автоматически подставит значение OPENAI_API_KEY
+// из настроек среды (Environment Variables)
+const openai = new OpenAI();
+
+export default async function handler(request) {
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
-    // Подготовка к вызову DeepSeek
-    const apiUrl = 'https://api.deepseek.ai/v1/completions'; // предполагаемый URL
-    const resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_KEY}`
-      },
-      body: JSON.stringify(body),
-      // не ставим mode/cors — это на сервере
+    // Получаем данные, которые пришли из браузера
+    const { messages } = await request.json();
+
+    // Отправляем запрос в OpenAI
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo", // Или "gpt-4-turbo" для лучшего качества
+      messages: messages,
     });
 
-    const text = await resp.text();
-    // Пробуем вернуть как JSON, если можно
-    try {
-      const json = JSON.parse(text);
-      // пробрасываем код ответа от API
-      return res.status(resp.status).json(json);
-    } catch (e) {
-      // если не JSON — вернём сырое тело
-      res.status(resp.status).send(text);
-    }
-  } catch (err) {
-    console.error('Proxy error', err);
-    return res.status(500).json({ error: 'Proxy error: ' + (err.message || err) });
+    // Возвращаем ответ модели обратно в браузер
+    return new Response(JSON.stringify({ response: completion.choices[0].message.content }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error("OpenAI API Error:", error);
+    return new Response(JSON.stringify({ error: 'Внутренняя ошибка сервера' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
