@@ -1,4 +1,6 @@
-// Файл: /api/chat.js
+export const config = {
+  runtime: 'edge',
+};
 
 import { GoogleGenAI } from '@google/genai';
 
