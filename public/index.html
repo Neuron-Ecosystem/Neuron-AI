@@ -19,6 +19,12 @@
             --input-bg: #281a3d; 
             /* Цвет более светлого фона для выделения поля */
             --input-highlight-bg: #32214d;
+            /* Цвет фона для сообщений */
+            --message-bg: #1f1433;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -29,6 +35,8 @@
             margin: 0 auto;
             padding: 40px 20px;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Заголовки */
@@ -44,33 +52,37 @@
             display: flex;
             flex-direction: column;
             width: 100%;
+            flex-grow: 1;
+            margin-bottom: 80px;
         }
 
         /* Блок для ответов (Ответ должен быть СВЕРХУ) */
         #output {
             order: 1; /* Размещаем сверху */
             margin-bottom: 20px;
-            padding: 15px;
-            min-height: 100px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--accent-color);
-            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            background-color: var(--message-bg);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 18px;
             white-space: pre-wrap;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         /* Панель ввода (должна быть СНИЗУ) */
         .input-panel {
             order: 2; /* Размещаем снизу */
             display: flex;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
             margin-top: 20px;
-            padding: 10px;
-            background-color: var(--input-highlight-bg); /* Более светлый фон для заметности */
-            border-radius: 12px;
-            /* Добавляем яркую рамку при фокусе для заметности */
+            padding: 16px;
+            background-color: var(--input-highlight-bg);
+            border-radius: 20px;
             border: 2px solid transparent; 
             transition: border-color 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
         /* Эффект фокуса для всей панели */
@@ -81,16 +93,18 @@
         /* Поле ввода (textarea) */
         textarea {
             flex-grow: 1;
-            height: 50px;
+            height: 60px;
             padding: 15px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             background-color: var(--input-highlight-bg);
             color: var(--text-color);
             resize: none;
             font-size: 16px;
             box-shadow: none;
             outline: none;
+            line-height: 1.4;
+            font-family: inherit;
         }
 
         /* Стилизация кнопки */
@@ -98,16 +112,19 @@
             background-color: var(--accent-color);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 0 20px;
+            border-radius: 12px;
+            padding: 0 24px;
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
         }
 
         button:hover {
             background-color: #a049f7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);
         }
         
         button:active {
@@ -122,6 +139,74 @@
             color: var(--accent-color);
             margin-bottom: 10px;
         }
+
+        /* Панель с иконками соцсетей */
+        .social-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            background-color: rgba(23, 14, 40, 0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(147, 51, 234, 0.3);
+            z-index: 100;
+        }
+
+        .social-icon {
+            font-size: 2rem;
+            color: var(--text-color);
+            transition: all 0.3s;
+            cursor: pointer;
+            border-radius: 50%;
+            padding: 10px;
+            background-color: var(--input-bg);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+        }
+
+        .social-icon:hover {
+            color: var(--accent-color);
+            transform: translateY(-5px);
+            background-color: var(--input-highlight-bg);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Адаптивность для мобильных устройств */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 15px;
+            }
+            
+            .social-panel {
+                gap: 20px;
+                padding: 15px;
+            }
+            
+            .social-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.7rem;
+            }
+            
+            #output {
+                padding: 15px;
+                border-radius: 16px;
+            }
+            
+            .input-panel {
+                padding: 12px;
+                border-radius: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -129,7 +214,6 @@
     <h1>Neuron AI (Ваш личный ассистент)</h1>
     
     <div class="chat-container">
-
         <h2>Ответ:</h2>
         <div id="output">Здесь появится ответ...</div>
 
@@ -137,7 +221,13 @@
             <textarea id="promptInput" placeholder="Введите ваш запрос сюда..."></textarea>
             <button onclick="sendPrompt()">Отправить</button>
         </div>
+    </div>
 
+    <!-- Панель с иконками соцсетей -->
+    <div class="social-panel">
+        <a href="https://t.me/neuron_ecosystem" target="_blank" class="social-icon">✈️</a>
+        <a href="https://neuron-p2p.ru/" target="_blank" class="social-icon">🌐</a>
+        <a href="https://vk.ru/club233118101" target="_blank" class="social-icon">🔷</a>
     </div>
 
     <script>
@@ -165,7 +255,7 @@
 
                 if (response.ok) {
                     outputDiv.innerText = data.response;
-                    promptInput.value = ''; // <--- ПРАВКА 1: Очистка поля ввода
+                    promptInput.value = ''; // Очистка поля ввода
                 } else {
                     outputDiv.innerText = `Ошибка: ${data.error || 'Неизвестная ошибка'}`;
                 }
@@ -175,6 +265,14 @@
                 outputDiv.innerText = 'Проблема с подключением. Проверьте консоль.';
             }
         }
+
+        // Добавляем возможность отправки сообщения по нажатию Enter (с зажатым Shift - перенос строки)
+        document.getElementById('promptInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendPrompt();
+            }
+        });
     </script>
 </body>
 </html>
