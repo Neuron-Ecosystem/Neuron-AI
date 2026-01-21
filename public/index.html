@@ -10,17 +10,11 @@
         /* == СТИЛИЗАЦИЯ ПОД NEURON ECOSYSTEM == */
         /* ================================================= */
         :root {
-            /* Темно-фиолетовый фон с сайта neuron-p2p.ru */
             --bg-color: #170e28; 
-            /* Основной цвет текста (белый) */
             --text-color: #e0e0e0;
-            /* Цвет основного акцента (пурпурно-фиолетовый) */
             --accent-color: #9333ea; 
-            /* Цвет для рамок и фона ввода (темный, но светлее фона) */
             --input-bg: #281a3d; 
-            /* Цвет более светлого фона для выделения поля */
             --input-highlight-bg: #32214d;
-            /* Цвет фона для сообщений */
             --message-bg: #1f1433;
         }
 
@@ -42,7 +36,6 @@
             flex-direction: column;
         }
 
-        /* Заголовки */
         h1, h2 {
             color: var(--accent-color);
             text-align: center;
@@ -50,7 +43,6 @@
             font-weight: 600;
         }
         
-        /* Главный контейнер для чата */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -59,7 +51,6 @@
             margin-bottom: 20px;
         }
 
-        /* Блок для ответов */
         #output {
             order: 1;
             margin-bottom: 20px;
@@ -74,7 +65,6 @@
             flex-grow: 1;
         }
 
-        /* Панель ввода - мобильная версия */
         .input-panel {
             order: 2;
             display: flex;
@@ -90,12 +80,10 @@
             bottom: 20px;
         }
         
-        /* Эффект фокуса для всей панели */
         .input-panel:focus-within {
              border-color: var(--accent-color); 
         }
 
-        /* Поле ввода (textarea) */
         textarea {
             flex-grow: 1;
             height: 60px;
@@ -112,7 +100,6 @@
             font-family: inherit;
         }
 
-        /* Стилизация кнопки */
         button {
             background-color: var(--accent-color);
             color: white;
@@ -132,12 +119,16 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);
         }
-        
-        button:active {
-            transform: scale(0.98);
+
+        /* Кнопка входа Neuron ID */
+        .auth-btn {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            margin-bottom: 15px;
+            align-self: center;
+            padding: 8px 16px;
         }
 
-        /* Иконка мозга */
         .logo {
             font-size: 3rem;
             display: block;
@@ -146,7 +137,6 @@
             margin-bottom: 10px;
         }
 
-        /* Панель с иконками соцсетей - ТОЛЬКО ДЛЯ МОБИЛЬНЫХ */
         .social-panel-mobile {
             display: none;
             justify-content: center;
@@ -159,7 +149,6 @@
             border-radius: 0 0 16px 16px;
         }
 
-        /* Панель с иконками соцсетей - ДЛЯ ДЕСКТОПА */
         .social-panel-desktop {
             display: flex;
             justify-content: center;
@@ -185,151 +174,24 @@
             text-decoration: none;
         }
 
-        .social-icon:hover {
-            color: var(--accent-color);
-            transform: translateY(-3px);
-            background-color: var(--input-highlight-bg);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Десктопная версия */
         @media (min-width: 769px) {
-            body {
-                padding: 40px 20px;
-            }
-            
-            .input-panel {
-                position: relative;
-                bottom: auto;
-            }
-            
-            .social-panel-mobile {
-                display: none !important;
-            }
-            
-            .social-panel-desktop {
-                display: flex;
-            }
+            body { padding: 40px 20px; }
+            .input-panel { position: relative; bottom: auto; }
+            .social-panel-mobile { display: none !important; }
+            .social-panel-desktop { display: flex; }
         }
 
-        /* Мобильная версия */
         @media (max-width: 768px) {
-            body {
-                padding: 0;
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .social-panel-mobile {
-                display: flex;
-                position: sticky;
-                top: 0;
-                z-index: 100;
-                margin-bottom: 0;
-            }
-            
-            .social-panel-desktop {
-                display: none !important;
-            }
-            
-            .chat-container {
-                flex-grow: 1;
-                margin-bottom: 0;
-                padding: 15px;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            #output {
-                flex-grow: 1;
-                margin-bottom: 15px;
-                min-height: auto;
-                max-height: calc(100vh - 250px);
-                overflow-y: auto;
-                padding: 15px;
-                border-radius: 16px;
-            }
-            
-            .input-panel {
-                position: sticky;
-                bottom: 15px;
-                margin-top: auto;
-                padding: 12px;
-                border-radius: 16px;
-            }
-            
-            textarea {
-                height: 50px;
-                padding: 12px;
-                font-size: 16px;
-            }
-            
-            button {
-                padding: 0 20px;
-                font-size: 14px;
-            }
-            
-            .logo {
-                font-size: 2.5rem;
-                margin-bottom: 5px;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-                margin-bottom: 15px;
-            }
-            
-            h2 {
-                font-size: 1.2rem;
-                margin-bottom: 10px;
-            }
-            
-            .social-icon {
-                width: 45px;
-                height: 45px;
-                font-size: 1.6rem;
-            }
-        }
-
-        /* Очень маленькие экраны */
-        @media (max-width: 360px) {
-            .social-panel-mobile {
-                gap: 15px;
-                padding: 12px;
-            }
-            
-            .social-panel-desktop {
-                gap: 20px;
-                padding: 15px;
-            }
-            
-            .social-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 1.4rem;
-                padding: 6px;
-            }
-            
-            .input-panel {
-                padding: 10px;
-            }
-            
-            textarea {
-                height: 45px;
-                padding: 10px;
-            }
-            
-            button {
-                padding: 0 15px;
-                font-size: 13px;
-            }
+            body { padding: 0; height: 100vh; display: flex; flex-direction: column; }
+            .social-panel-mobile { display: flex; position: sticky; top: 0; z-index: 100; margin-bottom: 0; }
+            .social-panel-desktop { display: none !important; }
+            .chat-container { flex-grow: 1; margin-bottom: 0; padding: 15px; overflow: hidden; display: flex; flex-direction: column; }
+            #output { flex-grow: 1; margin-bottom: 15px; max-height: calc(100vh - 250px); overflow-y: auto; }
+            .input-panel { position: sticky; bottom: 15px; margin-top: auto; }
         }
     </style>
 </head>
 <body>
-    <!-- Панель с иконками соцсетей - ТОЛЬКО ДЛЯ МОБИЛЬНЫХ -->
     <div class="social-panel-mobile">
         <a href="https://t.me/neuron_ecosystem" target="_blank" class="social-icon">✈️</a>
         <a href="https://neuron-p2p.ru/" target="_blank" class="social-icon">🌐</a>
@@ -337,7 +199,9 @@
     </div>
 
     <div class="logo">🧠</div>
-    <h1>Neuron AI (Ваш личный ассистент)</h1>
+    <h1>Neuron AI</h1>
+
+    <button id="loginBtn" class="auth-btn">Войти в Neuron ID</button>
     
     <div class="chat-container">
         <h2>Ответ:</h2>
@@ -345,69 +209,84 @@
 
         <div class="input-panel">
             <textarea id="promptInput" placeholder="Введите ваш запрос сюда..."></textarea>
-            <button onclick="sendPrompt()">Отправить</button>
+            <button id="sendBtn">Отправить</button>
         </div>
     </div>
 
-    <!-- Панель с иконками соцсетей - ДЛЯ ДЕСКТОПА -->
     <div class="social-panel-desktop">
         <a href="https://t.me/neuron_ecosystem" target="_blank" class="social-icon">✈️</a>
         <a href="https://neuron-p2p.ru/" target="_blank" class="social-icon">🌐</a>
         <a href="https://vk.ru/club233118101" target="_blank" class="social-icon">🔷</a>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOaDVzzPjyYm4HWMND2XYWjLy_h4wty5s",
+            authDomain: "neuron-ecosystem-2025.firebaseapp.com",
+            projectId: "neuron-ecosystem-2025",
+            storageBucket: "neuron-ecosystem-2025.firebasestorage.app",
+            messagingSenderId: "589834476565",
+            appId: "1:589834476565:web:26a110d25bb34e0add421c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            document.getElementById('loginBtn').innerText = user ? `Линия активна: ${user.displayName}` : "Войти в Neuron ID";
+        });
+
+        document.getElementById('loginBtn').onclick = async () => {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+        };
+
+        async function getContext() {
+            if (!currentUser) return "Нет данных (не залогинен)";
+            try {
+                const userRef = doc(db, "users", currentUser.uid);
+                const snap = await getDoc(userRef);
+                return snap.exists() ? JSON.stringify(snap.data()) : "Профиль пуст";
+            } catch (e) { return "Ошибка базы"; }
+        }
+
         async function sendPrompt() {
             const promptInput = document.getElementById('promptInput');
-            const promptText = promptInput.value;
             const outputDiv = document.getElementById('output');
-            
+            const promptText = promptInput.value;
             if (!promptText.trim()) return;
 
             outputDiv.innerText = "Думаю...";
+            const userData = await getContext();
 
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        messages: [{ role: "user", content: promptText }]
+                        messages: [{ role: "user", content: promptText }],
+                        context: userData
                     })
                 });
-
                 const data = await response.json();
-
-                if (response.ok) {
-                    outputDiv.innerText = data.response;
-                    promptInput.value = '';
-                    // Прокрутка к началу ответа на мобильных устройствах
-                    if (window.innerWidth <= 768) {
-                        outputDiv.scrollIntoView({ behavior: 'smooth' });
-                    }
-                } else {
-                    outputDiv.innerText = `Ошибка: ${data.error || 'Неизвестная ошибка'}`;
-                }
-
+                outputDiv.innerText = data.response;
+                promptInput.value = '';
             } catch (error) {
-                console.error('Ошибка сети или клиента:', error);
-                outputDiv.innerText = 'Проблема с подключением. Проверьте консоль.';
+                outputDiv.innerText = 'Ошибка подключения.';
             }
         }
 
-        // Добавляем возможность отправки сообщения по нажатию Enter
-        document.getElementById('promptInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendPrompt();
-            }
-        });
-
-        // Автофокус на поле ввода на мобильных устройствах
-        if (window.innerWidth <= 768) {
-            document.getElementById('promptInput').focus();
-        }
+        document.getElementById('sendBtn').onclick = sendPrompt;
+        document.getElementById('promptInput').onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(); }
+        };
     </script>
 </body>
 </html>
