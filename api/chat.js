@@ -2,26 +2,27 @@ export const config = {
   runtime: 'edge',
 };
 
-import { GoogleGenAI } from '@google/genai';
-
 export default async function handler(request) {
   if (request.method !== 'POST') {
-    return new Response('Метод не разрешен', { status: 405 });
+    return new Response('Method Not Allowed', { status: 405 });
   }
 
-  // ВСТАВЬ СВОЙ КЛЮЧ НАПРЯМУЮ НИЖЕ ВМЕСТО ПЕРЕМЕННОЙ
-  const API_KEY = "AIzaSyAJm0hj5znXg_agdgDgCEjDh0UU9-CEhjo";
+  const API_KEY = process.env.GEMINI_API_KEY;
+  if (!API_KEY) {
+    return new Response(JSON.stringify({ error: 'API ключ не настроен в Vercel' }), { status: 500 });
+  }
 
   try {
-    const genAI = new GoogleGenAI(API_KEY);
     const { messages, context } = await request.json();
-    
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const contents = [
-      {
-        role: 'user',
-        parts: [{ text: `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
+    // Формируем запрос напрямую к Google API
+    const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
 1. Neuron Notes (Заметки): https://neuron-p2p.ru/notes.html
@@ -44,18 +45,21 @@ export default async function handler(request) {
 * Почта: wertq6306@gmail.com
 Используй эту информацию, чтобы отвечать на вопросы о продуктах, функциях и команде Neuron Ecosystem.
 Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
- Данные из Firebase: ${context}` }]
-      },
-      ...messages.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      }))
-    ];
+ Данные пользователя из Firebase Budget: ${context || 'нет'}. \n\n Сообщения: ${messages.map(m => m.content).join('\n')}`
+          }]
+        }]
+      })
+    });
 
-    const result = await model.generateContent({ contents });
-    const responseText = await result.response.text(); 
+    const data = await googleResponse.json();
 
-    return new Response(JSON.stringify({ response: responseText }), {
+    if (!googleResponse.ok) {
+      throw new Error(data.error?.message || 'Ошибка Google API');
+    }
+
+    const aiText = data.candidates[0].content.parts[0].text;
+
+    return new Response(JSON.stringify({ response: aiText }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
