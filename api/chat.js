@@ -29,28 +29,28 @@ const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. 
 Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
 `;
 
-const API_KEY = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenAI(API_KEY);
-
 export default async function handler(request) {
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
   }
 
   try {
+    // Получаем ключ прямо из окружения внутри хендлера
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+        return new Response(JSON.stringify({ error: 'API ключ не найден в настройках Vercel' }), { status: 500 });
+    }
+
+    const genAI = new GoogleGenAI(apiKey);
     const { messages, context } = await request.json();
     
-    // Используем проверенную модель 1.5-flash
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // Формируем историю сообщений
     const contents = [
       {
         role: 'user',
-        parts: [{ text: `ИНСТРУКЦИЯ: ${SYSTEM_PROMPT}\nДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ: ${context || 'Данные отсутствуют'}` }]
+        parts: [{ text: `ИНСТРУКЦИЯ: ${SYSTEM_PROMPT}\nДАННЫЕ ИЗ БАЗЫ: ${context || 'Нет данных'}` }]
       },
       ...messages.map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
@@ -59,7 +59,6 @@ export default async function handler(request) {
     ];
 
     const result = await model.generateContent({ contents });
-    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: добавляем await и скобки ()
     const responseText = await result.response.text(); 
 
     return new Response(JSON.stringify({ response: responseText }), {
@@ -70,8 +69,8 @@ export default async function handler(request) {
   } catch (error) {
     console.error("ОШИБКА СЕРВЕРА:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500, 
-      headers: { 'Content-Type': 'application/json' }
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
     });
   }
 }
