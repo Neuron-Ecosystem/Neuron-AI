@@ -420,34 +420,32 @@ async function sendPrompt() {
     const text = input.value.trim();
     if (!text) return;
 
-    output.innerText = "Нейрон думает...";
+    output.innerText = "Neuron AI сканирует модули...";
 
-    let userContext = "Пользователь не авторизован (гость).";
+    let userContext = "Данные не найдены";
 
     if (currentUser) {
         try {
             const uid = currentUser.uid;
 
-            // Запрашиваем данные параллельно для скорости
-            const [userDoc, transactionsSnap, notesSnap] = await Promise.all([
-                db.collection("users").doc(uid).get(),
-                db.collection("users").doc(uid).collection("transactions").orderBy("date", "desc").limit(5).get(),
-                db.collection("users").doc(uid).collection("notes").limit(5).get()
+            // Запрашиваем новые коллекции study и budget
+            const [studyDoc, budgetDoc] = await Promise.all([
+                db.collection("study").doc(uid).get(),
+                db.collection("budget").doc(uid).get()
             ]);
 
-            const userData = userDoc.exists ? userDoc.data() : {};
-            const transactions = transactionsSnap.docs.map(doc => doc.data());
-            const notes = notesSnap.docs.map(doc => doc.data());
+            const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
+            const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "Баланс не указан";
 
+            // Передаем ИИ четкую структуру
             userContext = JSON.stringify({
-                profile: userData,
-                recent_transactions: transactions,
-                recent_notes: notes
+                study_module: scheduleData,
+                financial_module: { balance: balanceData }
             });
 
         } catch (e) {
             console.error("Ошибка Firebase:", e);
-            userContext = "Ошибка получения данных из базы.";
+            userContext = "Ошибка доступа к базе данных.";
         }
     }
 
@@ -465,8 +463,7 @@ async function sendPrompt() {
         output.innerText = data.response;
         input.value = '';
     } catch (err) {
-        output.innerText = "Ошибка связи с ИИ.";
-        console.error("Ошибка сети:", err);
+        output.innerText = "Ошибка сети.";
     }
 }
 
