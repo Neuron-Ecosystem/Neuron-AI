@@ -436,6 +436,7 @@ async function sendPrompt() {
 
             const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
             const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "Баланс не указан";
+            const all_notesData = notesDoc.exists ? notesDoc.data().all_notes : "Заметок нет";
 
             // Передаем ИИ четкую структуру
             userContext = JSON.stringify({
