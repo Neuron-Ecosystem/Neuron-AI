@@ -9,27 +9,55 @@
             --bg-color: #170e28; --text-color: #e0e0e0; --accent-color: #9333ea; 
             --input-bg: #281a3d; --input-highlight-bg: #32214d; --message-bg: #1f1433;
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color);
-            max-width: 760px; margin: 0 auto; padding: 20px; min-height: 100vh; display: flex; flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            max-width: 800px; margin: 0 auto; padding: 20px; min-height: 100vh;
+            display: flex; flex-direction: column;
         }
-        h1 { color: var(--accent-color); text-align: center; }
+        h1 { color: var(--accent-color); text-align: center; margin-bottom: 10px; }
+        
+        /* Стили чата */
         #output {
-            padding: 20px; background: var(--message-bg); border: 1px solid rgba(147, 51, 234, 0.3);
-            border-radius: 18px; min-height: 250px; flex-grow: 1; margin: 20px 0; white-space: pre-wrap;
+            background-color: var(--message-bg);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 18px; padding: 20px; min-height: 300px;
+            flex-grow: 1; margin-bottom: 20px; white-space: pre-wrap;
+            overflow-y: auto; line-height: 1.6;
         }
-        .auth-btn { background: transparent; border: 1px solid var(--accent-color); color: white; padding: 10px; border-radius: 12px; cursor: pointer; margin-bottom: 10px; }
-        .input-panel { display: flex; gap: 10px; padding: 15px; background: var(--input-highlight-bg); border-radius: 20px; }
-        textarea { flex-grow: 1; background: transparent; border: none; color: white; resize: none; outline: none; font-size: 16px; }
-        button#sendBtn { background: var(--accent-color); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        
+        .auth-section { text-align: center; margin-bottom: 15px; }
+        .auth-btn {
+            background: transparent; border: 1px solid var(--accent-color);
+            color: white; padding: 8px 16px; border-radius: 10px; cursor: pointer;
+        }
+
+        .input-area {
+            display: flex; gap: 10px; background: var(--input-highlight-bg);
+            padding: 15px; border-radius: 20px; align-items: flex-end;
+        }
+        textarea {
+            flex-grow: 1; background: transparent; border: none; color: white;
+            resize: none; outline: none; font-size: 16px; min-height: 24px; max-height: 150px;
+        }
+        #sendBtn {
+            background: var(--accent-color); color: white; border: none;
+            padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold;
+        }
     </style>
 </head>
 <body>
+    <div class="auth-section">
+        <button id="loginBtn" class="auth-btn">Войти в Neuron ID</button>
+    </div>
+
     <h1>Neuron AI</h1>
-    <button id="loginBtn" class="auth-btn">Войти в Neuron ID</button>
-    <div id="output">Привет! Я Neuron AI. Войди в аккаунт, чтобы я видел твой бюджет.</div>
-    <div class="input-panel">
-        <textarea id="promptInput" placeholder="Задай вопрос..."></textarea>
+    
+    <div id="output">Привет! Я готов к работе. Авторизуйся, чтобы я видел твои данные из Neuron Budget.</div>
+
+    <div class="input-area">
+        <textarea id="promptInput" placeholder="Спроси о чем угодно..." rows="1"></textarea>
         <button id="sendBtn">Отправить</button>
     </div>
 
@@ -65,34 +93,45 @@
             const text = input.value.trim();
             if (!text) return;
 
-            output.innerText = "Синхронизация с базой данных...";
-            let contextData = "Пользователь не авторизован.";
-
+            output.innerText = "Синхронизация с системой...";
+            
+            let context = "Гость";
             if (currentUser) {
-                // Стучимся в твою коллекцию users/UID
-                const snap = await getDoc(doc(db, "users", currentUser.uid));
-                if (snap.exists()) {
-                    contextData = JSON.stringify(snap.data());
-                } else {
-                    contextData = "Данные в Budget отсутствуют.";
-                }
+                try {
+                    const snap = await getDoc(doc(db, "users", currentUser.uid));
+                    if (snap.exists()) context = JSON.stringify(snap.data());
+                } catch (e) { console.error("Firebase error:", e); }
             }
 
             try {
-                const res = await fetch('/api/chat', {
+                // Путь /api/chat теперь работает, так как папка api в корне
+                const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: [{ role: "user", content: text }], context: contextData })
+                    body: JSON.stringify({ messages: [{ role: "user", content: text }], context })
                 });
-                const data = await res.json();
-                output.innerText = data.response || "Ошибка: " + data.error;
-                if (res.ok) input.value = '';
-            } catch (e) {
-                output.innerText = "Ошибка соединения с сервером.";
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    output.innerText = data.response;
+                    input.value = '';
+                } else {
+                    output.innerText = "Ошибка: " + (data.error || "Не удалось получить ответ");
+                }
+            } catch (err) {
+                output.innerText = "Ошибка соединения. Проверь консоль.";
+                console.error(err);
             }
         }
 
         document.getElementById('sendBtn').onclick = sendPrompt;
+        
+        // Автовысота текстарии
+        document.getElementById('promptInput').oninput = function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        };
     </script>
 </body>
 </html>
