@@ -33,7 +33,7 @@ export default async function handler(request) {
 3. Neuron Digital Studio (Дизайн): Студия цифрового дизайна. Создаем современные адаптивные сайты, UI/UX, брендинг. Используем AI, работаем быстро и доступно. Ссылка: https://neurondigital.tilda.ws/
 4. Neuron Tools (Инструменты): Анализатор Текста, QR-Генератор, EXIF-Viewer. Ссылка: https://tools.neuron-p2p.ru
 5. Neuron Calendar: Удобный календарь с синхронизацией и сохранением данных: https://calendar.neuron-p2p.ru
-6. Neuron Study: Умный помощник для учёбы с оффлайн-доступом и синхронизацией. Ссылка: https://study.neuron-p2p.ru
+6. Neuron Study: Умный помощник для учёбы с оффлайн-доступом и синхронизацией и возможностью заоплнить расписание. Ссылка: https://study.neuron-p2p.ru
 7. Neuron Budget: Финансовый помощник (Операции, Аналитика, Бюджеты, Цели). Ссылка: https://budget.neuron-p2p.ru
 8. Neuron Game Hub: Играй • Развивайся • Побеждай (игры, статистика, достижения). Ссылка: https://game-hub.neuron-p2p.ru
 9. Neuron Password Generator: Безопасные пароли. Ссылка: https://password-generator.neuron-p2p.ru
@@ -52,7 +52,8 @@ export default async function handler(request) {
 Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
 
             Данные пользователя из Firebase: ${context || 'нет данных'}. 
-            Отвечай кратко и по делу на русском.` 
+            Отвечай кратко и по делу на русском.
+            ЕСЛИ ПОЛЬЗОВАТЕЛЬ ГОВОРИТ ПРО РАСПИСАНИЕ ТО ЕМУ ИНТЕРЕСНА КОЛЛЕКЦИЯ study` 
           },
           ...messages
         ],
