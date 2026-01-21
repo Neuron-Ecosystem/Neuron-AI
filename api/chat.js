@@ -34,7 +34,7 @@ const genAI = new GoogleGenAI(API_KEY);
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), { 
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
       status: 405,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -43,13 +43,14 @@ export default async function handler(request) {
   try {
     const { messages, context } = await request.json();
     
-    // Используем стабильную модель flash
+    // Используем проверенную модель 1.5-flash
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+    // Формируем историю сообщений
     const contents = [
       {
         role: 'user',
-        parts: [{ text: `ИНСТРУКЦИЯ: ${SYSTEM_PROMPT}\nДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ: ${context || 'Нет данных'}` }]
+        parts: [{ text: `ИНСТРУКЦИЯ: ${SYSTEM_PROMPT}\nДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ: ${context || 'Данные отсутствуют'}` }]
       },
       ...messages.map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
@@ -58,7 +59,8 @@ export default async function handler(request) {
     ];
 
     const result = await model.generateContent({ contents });
-    const responseText = await result.response.text(); // Исправлено: добавлен await и ()
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: добавляем await и скобки ()
+    const responseText = await result.response.text(); 
 
     return new Response(JSON.stringify({ response: responseText }), {
       status: 200,
@@ -66,9 +68,9 @@ export default async function handler(request) {
     });
 
   } catch (error) {
-    console.error("ОШИБКА:", error.message);
+    console.error("ОШИБКА СЕРВЕРА:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
-      status: 500,
+      status: 500, 
       headers: { 'Content-Type': 'application/json' }
     });
   }
