@@ -435,7 +435,14 @@ async function sendPrompt() {
         if (window.innerWidth <= 768) {
             document.getElementById('promptInput').focus();
         }
+firebase.initializeApp(firebaseConfig);
 
+// Добавь это ПЕРЕД тем как вызывать базу данных
+firebase.firestore().settings({ 
+  experimentalForceLongPolling: true 
+});
+
+var db = firebase.firestore();
         // 1. Твои конфиги (замени на свои!)
 var firebaseConfig = {
     apiKey: "AIzaSyDOaDVzzPjyYm4HWMND2XYWjLy_h4wty5s",
