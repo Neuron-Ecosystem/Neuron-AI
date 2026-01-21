@@ -364,80 +364,8 @@
         <a href="https://vk.ru/club233118101" target="_blank" class="social-icon">🔷</a>
     </div>
 
-    <script>
-async function sendPrompt() {
-    const input = document.getElementById('promptInput');
-    const text = input.value.trim();
-    if (!text) return;
-
-    let userContext = "Пользователь не авторизован (гость).";
-
-    // 1. Если пользователь вошел, собираем его "цифровой след"
-    if (currentUser) {
-        try {
-            const db = firebase.firestore();
-            const uid = currentUser.uid;
-
-            // Достаем основной профиль (баланс и т.д.)
-            const userDoc = await db.collection("users").doc(uid).get();
-            const userData = userDoc.exists ? userDoc.data() : {};
-
-            // Достаем историю транзакций (последние 10 для контекста)
-            const transactionsSnap = await db.collection("users").doc(uid).collection("transactions")
-                .orderBy("date", "desc").limit(10).get();
-            const transactions = transactionsSnap.docs.map(doc => doc.data());
-
-            // Достаем последние заметки
-            const notesSnap = await db.collection("users").doc(uid).collection("notes").limit(5).get();
-            const notes = notesSnap.docs.map(doc => doc.data());
-
-            // Формируем "пакет данных" для ИИ
-            userContext = JSON.stringify({
-                profile: userData,
-                recent_transactions: transactions,
-                recent_notes: notes
-            });
-
-        } catch (e) {
-            console.error("Ошибка сбора данных из Firebase:", e);
-            userContext = "Ошибка получения данных из базы.";
-        }
-    }
-
-    // 2. Отправляем запрос в твой API (Vercel / Groq)
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                messages: [{ role: "user", content: text }],
-                context: userContext // Передаем всё, что нашли в базе
-            })
-        });
-
-        const data = await response.json();
-        document.getElementById('output').innerText = data.response;
-        input.value = '';
-    } catch (err) {
-        console.error("Ошибка сети:", err);
-    }
-}
-
-        // Добавляем возможность отправки сообщения по нажатию Enter
-        document.getElementById('promptInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendPrompt();
-            }
-        });
-
-        // Автофокус на поле ввода на мобильных устройствах
-        if (window.innerWidth <= 768) {
-            document.getElementById('promptInput').focus();
-        }
-firebase.initializeApp(firebaseConfig);
-        
-// 1. Твой конфиг
+<script>
+// 1. КОНФИГ ВСЕГДА ПЕРВЫМ
 var firebaseConfig = {
     apiKey: "AIzaSyDOaDVzzPjyYm4HWMND2XYWjLy_h4wty5s",
     authDomain: "neuron-ecosystem-2025.firebaseapp.com",
@@ -448,34 +376,33 @@ var firebaseConfig = {
     measurementId: "G-NSNQGK4THN"
 };
 
-// 2. Инициализация (ДОЛЖНА БЫТЬ ПЕРВОЙ)
-firebase.initializeApp(firebaseConfig);
+// 2. ИНИЦИАЛИЗАЦИЯ СРАЗУ ПОСЛЕ КОНФИГА
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-// 3. Теперь настраиваем Firestore
-firebase.firestore().settings({ 
-    experimentalForceLongPolling: true 
-});
-
+// 3. НАСТРОЙКИ БАЗЫ И АВТОРИЗАЦИИ
 var db = firebase.firestore();
+db.settings({ experimentalForceLongPolling: true }); // Исправляет ошибку подключения
+
 var auth = firebase.auth();
 var provider = new firebase.auth.GoogleAuthProvider();
-
 var currentUser = null;
 
-// 4. Следим за входом
+// 4. СЛЕДИМ ЗА ВХОДОМ
 auth.onAuthStateChanged(function(user) {
     var btn = document.getElementById('loginBtn');
     if (user) {
         currentUser = user;
-        btn.innerText = "Выйти (" + user.displayName + ")";
+        if(btn) btn.innerText = "Выйти (" + user.displayName + ")";
         console.log("ID пользователя:", user.uid);
     } else {
         currentUser = null;
-        btn.innerText = "Войти через Google";
+        if(btn) btn.innerText = "Войти через Google";
     }
 });
 
-// 5. Логика кнопки
+// 5. ЛОГИКА КНОПКИ ВХОДА
 document.getElementById('loginBtn').onclick = function() {
     if (!currentUser) {
         auth.signInWithPopup(provider).catch(function(error) {
@@ -485,6 +412,71 @@ document.getElementById('loginBtn').onclick = function() {
         auth.signOut();
     }
 };
-    </script>
+
+// 6. ФУНКЦИЯ ОТПРАВКИ СООБЩЕНИЯ
+async function sendPrompt() {
+    const input = document.getElementById('promptInput');
+    const output = document.getElementById('output');
+    const text = input.value.trim();
+    if (!text) return;
+
+    output.innerText = "Нейрон думает...";
+
+    let userContext = "Пользователь не авторизован (гость).";
+
+    if (currentUser) {
+        try {
+            const uid = currentUser.uid;
+
+            // Запрашиваем данные параллельно для скорости
+            const [userDoc, transactionsSnap, notesSnap] = await Promise.all([
+                db.collection("users").doc(uid).get(),
+                db.collection("users").doc(uid).collection("transactions").orderBy("date", "desc").limit(5).get(),
+                db.collection("users").doc(uid).collection("notes").limit(5).get()
+            ]);
+
+            const userData = userDoc.exists ? userDoc.data() : {};
+            const transactions = transactionsSnap.docs.map(doc => doc.data());
+            const notes = notesSnap.docs.map(doc => doc.data());
+
+            userContext = JSON.stringify({
+                profile: userData,
+                recent_transactions: transactions,
+                recent_notes: notes
+            });
+
+        } catch (e) {
+            console.error("Ошибка Firebase:", e);
+            userContext = "Ошибка получения данных из базы.";
+        }
+    }
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: "user", content: text }],
+                context: userContext 
+            })
+        });
+
+        const data = await response.json();
+        output.innerText = data.response;
+        input.value = '';
+    } catch (err) {
+        output.innerText = "Ошибка связи с ИИ.";
+        console.error("Ошибка сети:", err);
+    }
+}
+
+// 7. ОБРАБОТЧИКИ СОБЫТИЙ (ENTER)
+document.getElementById('promptInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendPrompt();
+    }
+});
+</script>
 </body>
 </html>
