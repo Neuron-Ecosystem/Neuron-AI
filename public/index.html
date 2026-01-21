@@ -257,31 +257,41 @@
             } catch (e) { return "Ошибка базы"; }
         }
 
-        async function sendPrompt() {
-            const promptInput = document.getElementById('promptInput');
-            const outputDiv = document.getElementById('output');
-            const promptText = promptInput.value;
-            if (!promptText.trim()) return;
+async function sendPrompt() {
+    const promptInput = document.getElementById('promptInput');
+    const outputDiv = document.getElementById('output');
+    const promptText = promptInput.value.trim();
+    
+    if (!promptText) return;
 
-            outputDiv.innerText = "Думаю...";
-            const userData = await getContext();
+    outputDiv.innerText = "Синхронизация с Neuron System...";
+    
+    // Получаем данные из Firebase (функцию getContext оставь как была)
+    const userData = await getContext(); 
 
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: "user", content: promptText }],
-                        context: userData
-                    })
-                });
-                const data = await response.json();
-                outputDiv.innerText = data.response;
-                promptInput.value = '';
-            } catch (error) {
-                outputDiv.innerText = 'Ошибка подключения.';
-            }
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: "user", content: promptText }],
+                context: userData // Передаем строку с данными из Firebase
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            outputDiv.innerText = data.response; // Теперь тут будет текст, а не undefined
+            promptInput.value = '';
+        } else {
+            outputDiv.innerText = "Ошибка сервера: " + (data.error || "500");
         }
+    } catch (error) {
+        outputDiv.innerText = 'Проблема с подключением.';
+        console.error(error);
+    }
+}
 
         document.getElementById('sendBtn').onclick = sendPrompt;
         document.getElementById('promptInput').onkeydown = (e) => {
