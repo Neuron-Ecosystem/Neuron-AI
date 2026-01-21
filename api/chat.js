@@ -4,7 +4,6 @@ export const config = {
 
 import { GoogleGenAI } from '@google/genai';
 
-// Системная установка
 const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
@@ -31,33 +30,30 @@ const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. 
 `;
 
 export default async function handler(request) {
-  // 1. Проверка метода
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
+    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), { status: 405 });
+  }
+
+  // Получаем ключ из переменных окружения Vercel
+  const API_KEY = process.env.GEMINI_API_KEY;
+
+  if (!API_KEY) {
+    return new Response(JSON.stringify({ error: 'Критическая ошибка: API ключ не найден на сервере.' }), { status: 500 });
   }
 
   try {
-    // 2. ПОЛУЧЕНИЕ КЛЮЧА ИЗ ENVIRONMENT VARIABLES
-    // ВАЖНО: убедитесь, что в Vercel ключ называется именно GEMINI_API_KEY
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey || apiKey.trim() === "") {
-      console.error("Критическая ошибка: GEMINI_API_KEY не установлен.");
-      return new Response(JSON.stringify({ 
-        error: 'API ключ не настроен в панели управления Vercel. Добавьте GEMINI_API_KEY в Environment Variables.' 
-      }), { status: 500 });
-    }
-
-    // Инициализация внутри обработчика гарантирует подхват ключа на сервере
-    const genAI = new GoogleGenAI(apiKey);
-    const { messages, context } = await request.json();
+    // ИСПРАВЛЕНИЕ 1: Передаем строку ключа напрямую
+    const genAI = new GoogleGenAI(API_KEY);
+    const body = await request.json();
+    const { messages } = body;
     
+    // ИСПРАВЛЕНИЕ 2: Используем существующую модель gemini-1.5-flash
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const contents = [
       {
-        role: 'user',
-        parts: [{ text: `ИНСТРУКЦИЯ: ${SYSTEM_PROMPT}\nДАННЫЕ ИЗ БАЗЫ: ${context || 'Нет данных'}` }]
+        role: 'user', 
+        parts: [{ text: `Системная установка: ${SYSTEM_PROMPT}` }]
       },
       ...messages.map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
@@ -66,7 +62,9 @@ export default async function handler(request) {
     ];
 
     const result = await model.generateContent({ contents });
-    const responseText = await result.response.text(); 
+    
+    // ИСПРАВЛЕНИЕ 3: Вызываем метод .text() как асинхронную функцию
+    const responseText = await result.response.text();
 
     return new Response(JSON.stringify({ response: responseText }), {
       status: 200,
@@ -74,10 +72,13 @@ export default async function handler(request) {
     });
 
   } catch (error) {
-    console.error("ОШИБКА ИИ:", error.message);
-    return new Response(JSON.stringify({ error: `Сбой сервера: ${error.message}` }), { 
+    console.error("ОШИБКА:", error.message);
+    return new Response(JSON.stringify({ 
+      error: 'Ошибка при генерации ответа',
+      details: error.message 
+    }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
