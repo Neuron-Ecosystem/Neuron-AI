@@ -15,14 +15,18 @@ export default async function handler(request) {
   try {
     const { messages, context } = await request.json();
 
-    // Формируем запрос напрямую к Google API
-    const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    // Используем v1 вместо v1beta и правильный эндпоинт
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+    const googleResponse = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
+        contents: [
+          {
+            role: "user",
+            parts: [{
+              text: `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
 1. Neuron Notes (Заметки): https://neuron-p2p.ru/notes.html
@@ -45,19 +49,28 @@ export default async function handler(request) {
 * Почта: wertq6306@gmail.com
 Используй эту информацию, чтобы отвечать на вопросы о продуктах, функциях и команде Neuron Ecosystem.
 Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
- Данные пользователя из Firebase Budget: ${context || 'нет'}. \n\n Сообщения: ${messages.map(m => m.content).join('\n')}`
-          }]
-        }]
+ 
+              ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ: ${context || 'нет данных'}. 
+              ИСТОРИЯ И ЗАПРОС: ${messages.map(m => m.content).join('\n')}`
+            }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 800,
+        }
       })
     });
 
     const data = await googleResponse.json();
 
     if (!googleResponse.ok) {
-      throw new Error(data.error?.message || 'Ошибка Google API');
+      console.error("Google API Error:", data);
+      return new Response(JSON.stringify({ error: data.error?.message || 'Ошибка API' }), { status: googleResponse.status });
     }
 
-    const aiText = data.candidates[0].content.parts[0].text;
+    // Извлекаем текст ответа
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Извините, я не смог сформировать ответ.";
 
     return new Response(JSON.stringify({ response: aiText }), {
       status: 200,
