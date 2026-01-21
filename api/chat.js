@@ -1,17 +1,31 @@
-// Файл: /api/chat.js
-
-// Явно указываем Vercel, что это Edge Function
 export const config = {
   runtime: 'edge',
 };
 
-import { GoogleGenAI } from '@google/genai';
+export default async function handler(request) {
+  if (request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
 
-// *******************************************************************
-// СИСТЕМНЫЙ ПРОМПТ
-// ИСПОЛЬЗУЕМ ОБРАТНЫЕ КАВЫЧКИ (`) для многострочного текста
-// *******************************************************************
-const SYSTEM_PROMPT = `Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
+  // Твой ключ Groq
+  const API_KEY = "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";
+
+  try {
+    const { messages, context } = await request.json();
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        // Самая мощная из бесплатных моделей на Groq
+        model: "llama-3.3-70b-versatile", 
+        messages: [
+          { 
+            role: "system", 
+            content: `Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
 1. Neuron Notes (Заметки): https://neuron-p2p.ru/notes.html
@@ -35,77 +49,32 @@ const SYSTEM_PROMPT = `Ты — Neuron AI, инновационный и дру�
 * TikTok: tiktok.com/@neuron_eco
 * Почта: wertq6306@gmail.com
 Используй эту информацию, чтобы отвечать на вопросы о продуктах, функциях и команде Neuron Ecosystem.
-Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ`;
+Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
 
-
-// Считываем ключ API
-const API_KEY = process.env.GEMINI_API_KEY;
-
-if (!API_KEY) {
-    throw new Error('Ключ GEMINI_API_KEY не найден в переменных окружения.');
-}
-
-// Передаем ключ в конструктор
-const ai = new GoogleGenAI({ apiKey: API_KEY }); 
-
-
-export default async function handler(request) {
-  
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  try {
-    const body = await request.json();
-    const { messages } = body;
-    
-    // ФОРМИРОВАНИЕ КОНТЕНТА:
-    // 1. Системный контекст 
-    const systemContext = [{
-        role: 'user', 
-        parts: [{ text: `Контекст: ${SYSTEM_PROMPT}` }]
-    }];
-    
-    // 2. Сообщение пользователя 
-    const userMessages = messages.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-    }));
-    
-    // Объединяем
-    const contents = [...systemContext, ...userMessages];
-
-
-    // Отправка запроса в Gemini
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', 
-      contents: contents,
+            Данные пользователя из Firebase: ${context || 'нет данных'}. 
+            Отвечай кратко и по делу на русском.` 
+          },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 1024
+      })
     });
 
-    // Возвращаем успешный ответ
-    return new Response(JSON.stringify({ 
-        response: response.text 
-    }), {
+    const data = await response.json();
+
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: data.error?.message || 'Groq Error' }), { status: 500 });
+    }
+
+    const aiText = data.choices[0].message.content;
+
+    return new Response(JSON.stringify({ response: aiText }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    // Обработка ошибок
-    console.error("КРИТИЧЕСКАЯ ОШИБКА:", error.message);
-    
-    const errorMessage = error.message || 'Неизвестная ошибка прокси-сервера.';
-    const status = error.status || 500;
-
-    return new Response(JSON.stringify({ 
-      error: `Ошибка API ${status}. Проверьте ключ Gemini.`,
-      details: errorMessage
-    }), {
-      status: status,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
