@@ -26,23 +26,26 @@ const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. 
 * TikTok: tiktok.com/@neuron_eco
 * Почта: wertq6306@gmail.com
 Используй эту информацию, чтобы отвечать на вопросы о продуктах, функциях и команде Neuron Ecosystem.
-Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ`;
+Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
+`;
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenAI(API_KEY);
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), { status: 405 });
+    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), { 
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   try {
     const { messages, context } = await request.json();
     
-    // Инициализируем модель (рекомендую 1.5-flash для скорости и стабильности)
+    // Используем стабильную модель flash
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // Формируем контент. Первый месседж — системная установка и данные из Firebase
     const contents = [
       {
         role: 'user',
@@ -55,7 +58,7 @@ export default async function handler(request) {
     ];
 
     const result = await model.generateContent({ contents });
-    const responseText = result.response.text(); // Важно: это метод!
+    const responseText = await result.response.text(); // Исправлено: добавлен await и ()
 
     return new Response(JSON.stringify({ response: responseText }), {
       status: 200,
@@ -64,6 +67,9 @@ export default async function handler(request) {
 
   } catch (error) {
     console.error("ОШИБКА:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
