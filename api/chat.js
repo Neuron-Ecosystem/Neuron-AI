@@ -1,7 +1,10 @@
-export const config = { runtime: 'edge' };
+export const config = {
+  runtime: 'edge',
+};
+
 import { GoogleGenAI } from '@google/genai';
 
-const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
+const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
 1. Neuron Notes (Заметки): https://neuron-p2p.ru/notes.html
@@ -26,19 +29,24 @@ const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. 
 Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ`;
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: API_KEY }); 
+const genAI = new GoogleGenAI(API_KEY);
 
 export default async function handler(request) {
-  if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), { status: 405 });
+  }
 
   try {
     const { messages, context } = await request.json();
     
-    // Формируем контент для Gemini с учетом данных из Firebase
+    // Инициализируем модель (рекомендую 1.5-flash для скорости и стабильности)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    // Формируем контент. Первый месседж — системная установка и данные из Firebase
     const contents = [
       {
-        role: 'user', 
-        parts: [{ text: `Системная установка: ${SYSTEM_PROMPT}\nТекущие данные пользователя из базы: ${context}` }]
+        role: 'user',
+        parts: [{ text: `ИНСТРУКЦИЯ: ${SYSTEM_PROMPT}\nДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ: ${context || 'Нет данных'}` }]
       },
       ...messages.map(msg => ({
         role: msg.role === 'user' ? 'user' : 'model',
@@ -46,14 +54,16 @@ export default async function handler(request) {
       }))
     ];
 
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const result = await model.generateContent({ contents });
+    const responseText = result.response.text(); // Важно: это метод!
 
-    return new Response(JSON.stringify({ response: result.response.text() }), {
+    return new Response(JSON.stringify({ response: responseText }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
+    console.error("ОШИБКА:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
