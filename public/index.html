@@ -3,6 +3,7 @@
 <head>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <meta name="google-site-verification" content="unrJT2kfnaTJfgm-4h8d6Tq5YObmkG9JYVn-2UCGbag" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -364,44 +365,63 @@
     </div>
 
     <script>
-        async function sendPrompt() {
-            const promptInput = document.getElementById('promptInput');
-            const promptText = promptInput.value;
-            const outputDiv = document.getElementById('output');
-            
-            if (!promptText.trim()) return;
+async function sendToAI() {
+    const input = document.getElementById('promptInput');
+    const text = input.value.trim();
+    if (!text) return;
 
-            outputDiv.innerText = "Думаю...";
+    let userContext = "Пользователь не авторизован (гость).";
 
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        messages: [{ role: "user", content: promptText }]
-                    })
-                });
+    // 1. Если пользователь вошел, собираем его "цифровой след"
+    if (currentUser) {
+        try {
+            const db = firebase.firestore();
+            const uid = currentUser.uid;
 
-                const data = await response.json();
+            // Достаем основной профиль (баланс и т.д.)
+            const userDoc = await db.collection("users").doc(uid).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
 
-                if (response.ok) {
-                    outputDiv.innerText = data.response;
-                    promptInput.value = '';
-                    // Прокрутка к началу ответа на мобильных устройствах
-                    if (window.innerWidth <= 768) {
-                        outputDiv.scrollIntoView({ behavior: 'smooth' });
-                    }
-                } else {
-                    outputDiv.innerText = `Ошибка: ${data.error || 'Неизвестная ошибка'}`;
-                }
+            // Достаем историю транзакций (последние 10 для контекста)
+            const transactionsSnap = await db.collection("users").doc(uid).collection("transactions")
+                .orderBy("date", "desc").limit(10).get();
+            const transactions = transactionsSnap.docs.map(doc => doc.data());
 
-            } catch (error) {
-                console.error('Ошибка сети или клиента:', error);
-                outputDiv.innerText = 'Проблема с подключением. Проверьте консоль.';
-            }
+            // Достаем последние заметки
+            const notesSnap = await db.collection("users").doc(uid).collection("notes").limit(5).get();
+            const notes = notesSnap.docs.map(doc => doc.data());
+
+            // Формируем "пакет данных" для ИИ
+            userContext = JSON.stringify({
+                profile: userData,
+                recent_transactions: transactions,
+                recent_notes: notes
+            });
+
+        } catch (e) {
+            console.error("Ошибка сбора данных из Firebase:", e);
+            userContext = "Ошибка получения данных из базы.";
         }
+    }
+
+    // 2. Отправляем запрос в твой API (Vercel / Groq)
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: "user", content: text }],
+                context: userContext // Передаем всё, что нашли в базе
+            })
+        });
+
+        const data = await response.json();
+        document.getElementById('output').innerText = data.response;
+        input.value = '';
+    } catch (err) {
+        console.error("Ошибка сети:", err);
+    }
+}
 
         // Добавляем возможность отправки сообщения по нажатию Enter
         document.getElementById('promptInput').addEventListener('keydown', function(e) {
