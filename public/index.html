@@ -429,7 +429,7 @@ async function sendPrompt() {
             const uid = currentUser.uid;
 
             // Запрашиваем новые коллекции study и budget
-            const [studyDoc, budgetDoc, notesSnap] = await Promise.all([
+            const [studyDoc, budgetDoc, notesDoc] = await Promise.all([
                 db.collection("study").doc(uid).get(),
                 db.collection("budget").doc(uid).get(),
                 db.collection("notes").doc(uid).get()
