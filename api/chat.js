@@ -4,6 +4,7 @@ export const config = {
 
 import { GoogleGenAI } from '@google/genai';
 
+// Системная установка
 const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
@@ -30,18 +31,24 @@ const SYSTEM_PROMPT = `Ты — Neuron AI, ассистент Neuron Ecosystem. 
 `;
 
 export default async function handler(request) {
+  // 1. Проверка метода
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
   }
 
   try {
-    // Получаем ключ прямо из окружения внутри хендлера
+    // 2. ПОЛУЧЕНИЕ КЛЮЧА ИЗ ENVIRONMENT VARIABLES
+    // ВАЖНО: убедитесь, что в Vercel ключ называется именно GEMINI_API_KEY
     const apiKey = process.env.GEMINI_API_KEY;
 
-    if (!apiKey) {
-        return new Response(JSON.stringify({ error: 'API ключ не найден в настройках Vercel' }), { status: 500 });
+    if (!apiKey || apiKey.trim() === "") {
+      console.error("Критическая ошибка: GEMINI_API_KEY не установлен.");
+      return new Response(JSON.stringify({ 
+        error: 'API ключ не настроен в панели управления Vercel. Добавьте GEMINI_API_KEY в Environment Variables.' 
+      }), { status: 500 });
     }
 
+    // Инициализация внутри обработчика гарантирует подхват ключа на сервере
     const genAI = new GoogleGenAI(apiKey);
     const { messages, context } = await request.json();
     
@@ -67,10 +74,10 @@ export default async function handler(request) {
     });
 
   } catch (error) {
-    console.error("ОШИБКА СЕРВЕРА:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
+    console.error("ОШИБКА ИИ:", error.message);
+    return new Response(JSON.stringify({ error: `Сбой сервера: ${error.message}` }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
