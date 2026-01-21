@@ -429,19 +429,21 @@ async function sendPrompt() {
             const uid = currentUser.uid;
 
             // Запрашиваем новые коллекции study и budget
-            const [studyDoc, budgetDoc] = await Promise.all([
+            const [studyDoc, budgetDoc, notesSnap] = await Promise.all([
                 db.collection("study").doc(uid).get(),
-                db.collection("budget").doc(uid).get()
+                db.collection("budget").doc(uid).get(),
+                db.collection("notes").doc(uid).collection("all_notes").limit(5).get()
             ]);
 
             const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
             const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "Баланс не указан";
-            const all_notesData = notesDoc.exists ? notesDoc.data().all_notes : "Заметок нет";
+            const notesData = notesSnap.docs.map(doc => doc.data());
 
             // Передаем ИИ четкую структуру
             userContext = JSON.stringify({
                 study_module: scheduleData,
-                financial_module: { balance: balanceData }
+                financial_module: { balance: balanceData },
+                notes_module: notesData
             });
 
         } catch (e) {
