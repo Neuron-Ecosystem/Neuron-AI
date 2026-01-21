@@ -1,32 +1,17 @@
+// Файл: /api/chat.js
+
+// Явно указываем Vercel, что это Edge Function
 export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(request) {
-  if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
+import { GoogleGenAI } from '@google/genai';
 
-  const API_KEY = process.env.GEMINI_API_KEY;
-  if (!API_KEY) {
-    return new Response(JSON.stringify({ error: 'API ключ не настроен в Vercel' }), { status: 500 });
-  }
-
-  try {
-    const { messages, context } = await request.json();
-
-    // Используем v1 вместо v1beta и правильный эндпоинт
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
-    const googleResponse = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{
-              text: `Ты — Neuron AI, ассистент Neuron Ecosystem. Отвечай всегда на русском языке. Твои создатели — два разработчика по 14 лет. Ты — Neuron AI, ассистент Neuron Ecosystem. Создатели: два разработчика по 14 лет. Отвечай позитивно и профессионально. Используй данные из контекста пользователя из данных в Firebase, если они есть. Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
+// *******************************************************************
+// СИСТЕМНЫЙ ПРОМПТ
+// ИСПОЛЬЗУЕМ ОБРАТНЫЕ КАВЫЧКИ (`) для многострочного текста
+// *******************************************************************
+const SYSTEM_PROMPT = `Ты — Neuron AI, инновационный и дружелюбный ИИ-ассистент, созданный командой Neuron Ecosystem. Твоя основная задача — помогать пользователям, предоставляя точную информацию о нашей экосистеме. Наша команда состоит из двух молодых и амбициозных разработчиков по 14 лет, что делает наши решения особенно новаторскими. Отвечай всегда на русском языке, сохраняя позитивный и профессиональный тон.
 
 ПРОЕКТЫ NEURON ECOSYSTEM:
 1. Neuron Notes (Заметки): https://neuron-p2p.ru/notes.html
@@ -41,6 +26,8 @@ export default async function handler(request) {
 10. Synapse (P2P Чат): Прямой чат в браузере с шифрованием и повышенной анонимностью. Ссылка: https://synapse.neuron-p2p.ru
 11. Neuron AI: Исскуственный интелект от Neuron Ecosystem, созданный для помощи в продуктах Neuron Ecosystem и ответам на любые вопросы. Ссылка: https://neuron-ai-eta.vercel.app/
 12. What If: сервис, в котором можно найти сценарии по разным тематикам, что было бы если бы какое-то событие в мире пошло не так. Ссылка: https://ifwhat.ru
+13. Neuron Status: сервис для просмотра работоспособности сервсов экосистемы. Ссылка: https://status.neuron-p2p.ru
+14. Neuron Link: сервис который выступает промежуточным при переходе по ссылке, наш сервис отчищает ваши данные которые передются по переходу по ссылке. Ссылка: https://link.neuron-p2p.ru
 
 КОНТАКТЫ:
 * Telegram: https://t.me/neuron_ecosystem
@@ -48,36 +35,77 @@ export default async function handler(request) {
 * TikTok: tiktok.com/@neuron_eco
 * Почта: wertq6306@gmail.com
 Используй эту информацию, чтобы отвечать на вопросы о продуктах, функциях и команде Neuron Ecosystem.
-Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ
- 
-              ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ: ${context || 'нет данных'}. 
-              ИСТОРИЯ И ЗАПРОС: ${messages.map(m => m.content).join('\n')}`
-            }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800,
-        }
-      })
+Также ты обязан отвечать на любые другие вопросы от пользователя. На абсолютно любой вопрос, который даже не касается Neuron Ecosystem, пользователь обязан получить от тебя ответ`;
+
+
+// Считываем ключ API
+const API_KEY = process.env.GEMINI_API_KEY;
+
+if (!API_KEY) {
+    throw new Error('Ключ GEMINI_API_KEY не найден в переменных окружения.');
+}
+
+// Передаем ключ в конструктор
+const ai = new GoogleGenAI({ apiKey: API_KEY }); 
+
+
+export default async function handler(request) {
+  
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Метод не разрешен' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const body = await request.json();
+    const { messages } = body;
+    
+    // ФОРМИРОВАНИЕ КОНТЕНТА:
+    // 1. Системный контекст 
+    const systemContext = [{
+        role: 'user', 
+        parts: [{ text: `Контекст: ${SYSTEM_PROMPT}` }]
+    }];
+    
+    // 2. Сообщение пользователя 
+    const userMessages = messages.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }]
+    }));
+    
+    // Объединяем
+    const contents = [...systemContext, ...userMessages];
+
+
+    // Отправка запроса в Gemini
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash', 
+      contents: contents,
     });
 
-    const data = await googleResponse.json();
-
-    if (!googleResponse.ok) {
-      console.error("Google API Error:", data);
-      return new Response(JSON.stringify({ error: data.error?.message || 'Ошибка API' }), { status: googleResponse.status });
-    }
-
-    // Извлекаем текст ответа
-    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Извините, я не смог сформировать ответ.";
-
-    return new Response(JSON.stringify({ response: aiText }), {
+    // Возвращаем успешный ответ
+    return new Response(JSON.stringify({ 
+        response: response.text 
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    // Обработка ошибок
+    console.error("КРИТИЧЕСКАЯ ОШИБКА:", error.message);
+    
+    const errorMessage = error.message || 'Неизвестная ошибка прокси-сервера.';
+    const status = error.status || 500;
+
+    return new Response(JSON.stringify({ 
+      error: `Ошибка API ${status}. Проверьте ключ Gemini.`,
+      details: errorMessage
+    }), {
+      status: status,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
