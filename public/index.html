@@ -155,7 +155,6 @@
         <a href="https://neuron-p2p.ru/" target="_blank" class="social-icon">🌐</a>
         <a href="https://vk.ru/club233118101" target="_blank" class="social-icon">🔷</a>
     </div>
-
 <script>
 var firebaseConfig = {
     apiKey: "AIzaSyDOaDVzzPjyYm4HWMND2XYWjLy_h4wty5s",
@@ -203,7 +202,7 @@ async function sendPrompt() {
     const text = input.value.trim();
     if (!text) return;
 
-    output.innerText = "Neuron AI сканирует модули и историю транзакций...";
+    output.innerText = "Neuron AI сканирует модули и собирает заметки...";
 
     let userContext = "Данные не найдены";
 
@@ -211,56 +210,50 @@ async function sendPrompt() {
         try {
             const uid = currentUser.uid;
 
-            // ПОЛУЧАЕМ ВСЕ ДАННЫЕ ВКЛЮЧАЯ ИСТОРИЮ ТРАНЗАКЦИЙ
-            const [studyDoc, budgetDoc, notesDoc, transSnap] = await Promise.all([
+            // 1. ЗАГРУЖАЕМ ВСЕ ДАННЫЕ ОДНОВРЕМЕННО
+            const [studyDoc, budgetDoc, notesSnap, transSnap] = await Promise.all([
                 db.collection("study").doc(uid).get(),
                 db.collection("budget").doc(uid).get(),
-                db.collection("notes").doc(uid).get(),
+                db.collection("users").doc(uid).collection("notes").get(), // Подколлекция заметок
                 db.collection("users").doc(uid).collection("transactions").orderBy("date", "desc").limit(10).get()
             ]);
 
-            // Формируем текстовый список последних 10 транзакций
+            // 2. ОБРАБОТКА ТРАНЗАКЦИЙ
             const history = transSnap.docs.map(doc => {
                 const d = doc.data();
                 return `${d.date}: ${d.type === 'income' ? '+' : '-'}${d.amount}₽ (${d.category}) - ${d.description}`;
             }).join('\n');
 
-// 1. Получаем основные данные (Расписание и Бюджет) как и раньше
-const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
-const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "0";
+            // 3. ОБРАБОТКА РАСПИСАНИЯ И БАЛАНСА
+            const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
+            const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "0";
 
-// 2. НОВАЯ ЛОГИКА ДЛЯ ЗАМЕТОК:
-// Вместо того чтобы брать одно поле all_notes, мы лезем в папку (подколлекцию) notes
-const notesSnapshot = await db.collection('users').doc(user.uid).collection('notes').get();
-let notesData = "Заметок нет";
+            // 4. ОБРАБОТКА ЗАМЕТОК (НОВАЯ ЛОГИКА)
+            let notesData = "Заметок нет";
+            if (!notesSnap.empty) {
+                notesData = notesSnap.docs.map(doc => {
+                    const d = doc.data();
+                    return {
+                        title: d.title || "Без названия",
+                        content: d.content || "",
+                        updated: d.updated ? new Date(d.updated).toLocaleString() : "Неизвестно"
+                    };
+                });
+            }
 
-if (!notesSnapshot.empty) {
-    // Собираем все документы из папки в один массив объектов
-    const notesArray = notesSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            title: data.title || "Без названия",
-            content: data.content || "",
-            updated: data.updated ? new Date(data.updated).toLocaleString() : "Дата неизвестна"
-        };
-    });
-    // Превращаем массив в строку или оставляем объектом для JSON
-    notesData = notesArray; 
-}
-
-// 3. Формируем контекст для ИИ
-userContext = JSON.stringify({
-    study_module: scheduleData,
-    financial_module: { 
-        current_balance: balanceData + " ₽",
-        last_transactions: history || "История операций пуста"
-    },
-    notes_module: notesData // Теперь здесь будет полный список всех твоих заметок
-});
+            // 5. ФОРМИРУЕМ ПОЛНЫЙ КОНТЕКСТ ДЛЯ ИИ
+            userContext = JSON.stringify({
+                study_module: scheduleData,
+                financial_module: { 
+                    current_balance: balanceData + " ₽",
+                    last_transactions: history || "История операций пуста"
+                },
+                notes_module: notesData 
+            });
 
         } catch (e) {
             console.error("Ошибка Firebase:", e);
-            userContext = "Ошибка доступа к базе данных.";
+            userContext = "Ошибка доступа к базе данных: " + e.message;
         }
     }
 
@@ -278,7 +271,8 @@ userContext = JSON.stringify({
         output.innerText = data.response;
         input.value = '';
     } catch (err) {
-        output.innerText = "Ошибка сети.";
+        output.innerText = "Ошибка сети или сервера.";
+        console.error(err);
     }
 }
 
