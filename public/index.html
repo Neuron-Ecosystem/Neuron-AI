@@ -225,19 +225,38 @@ async function sendPrompt() {
                 return `${d.date}: ${d.type === 'income' ? '+' : '-'}${d.amount}₽ (${d.category}) - ${d.description}`;
             }).join('\n');
 
-            const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
-            const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "0";
-            const notesData = notesDoc.exists ? notesDoc.data().all_notes : "Заметок нет";
+// 1. Получаем основные данные (Расписание и Бюджет) как и раньше
+const scheduleData = studyDoc.exists ? studyDoc.data().schedule : "Расписание пустое";
+const balanceData = budgetDoc.exists ? budgetDoc.data().balance : "0";
 
-            // Передаем ИИ полную структуру финансового модуля
-            userContext = JSON.stringify({
-                study_module: scheduleData,
-                financial_module: { 
-                    current_balance: balanceData + " ₽",
-                    last_transactions: history || "История операций пуста"
-                },
-                notes_module: notesData
-            });
+// 2. НОВАЯ ЛОГИКА ДЛЯ ЗАМЕТОК:
+// Вместо того чтобы брать одно поле all_notes, мы лезем в папку (подколлекцию) notes
+const notesSnapshot = await db.collection('users').doc(user.uid).collection('notes').get();
+let notesData = "Заметок нет";
+
+if (!notesSnapshot.empty) {
+    // Собираем все документы из папки в один массив объектов
+    const notesArray = notesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            title: data.title || "Без названия",
+            content: data.content || "",
+            updated: data.updated ? new Date(data.updated).toLocaleString() : "Дата неизвестна"
+        };
+    });
+    // Превращаем массив в строку или оставляем объектом для JSON
+    notesData = notesArray; 
+}
+
+// 3. Формируем контекст для ИИ
+userContext = JSON.stringify({
+    study_module: scheduleData,
+    financial_module: { 
+        current_balance: balanceData + " ₽",
+        last_transactions: history || "История операций пуста"
+    },
+    notes_module: notesData // Теперь здесь будет полный список всех твоих заметок
+});
 
         } catch (e) {
             console.error("Ошибка Firebase:", e);
